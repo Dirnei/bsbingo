@@ -52,11 +52,11 @@ The existing prototype is a fully working 5x5 bingo board with shuffle, mark, bi
 **Description:** As a developer, I need a GameActor that generates a randomized 5x5 board from a group's word pool so each game is unique.
 
 **Acceptance Criteria:**
-- [ ] GameActor receives `NewGame { GroupId }` message
-- [ ] Fetches the group's words, shuffles, picks 24, inserts FREE space at center (index 12)
-- [ ] Returns a `Board` with 25 cells in randomized order
-- [ ] Different calls produce different boards (random shuffle)
-- [ ] Typecheck passes
+- [x] GameActor receives `NewGame { GroupId }` message
+- [x] Fetches the group's words, shuffles, picks 24, inserts FREE space at center (index 12)
+- [x] Returns a `Board` with 25 cells in randomized order
+- [x] Different calls produce different boards (random shuffle)
+- [x] Typecheck passes
 
 ### Task-005: Seed default buzzwords on first startup
 **Description:** As a player, I want the "Smart Factory Edition" word group pre-loaded so I can play immediately without creating a group first.
