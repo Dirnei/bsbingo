@@ -32,4 +32,18 @@ public sealed class GroupRepository
         group.Validate();
         await _groups.InsertOneAsync(group);
     }
+
+    public async Task<bool> UpdateAsync(Group group)
+    {
+        group.Validate();
+        group.UpdatedAt = DateTime.UtcNow;
+        var result = await _groups.ReplaceOneAsync(g => g.Id == group.Id, group);
+        return result.MatchedCount > 0;
+    }
+
+    public async Task<bool> DeleteAsync(string id)
+    {
+        var result = await _groups.DeleteOneAsync(g => g.Id == id);
+        return result.DeletedCount > 0;
+    }
 }
