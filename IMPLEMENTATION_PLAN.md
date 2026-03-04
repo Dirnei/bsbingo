@@ -93,12 +93,12 @@ Add full CRUD capabilities for word groups so anyone (anonymous, no auth require
 **Description:** As a user, I want a confirmation dialog before deleting a group so I don't accidentally lose my word collection.
 
 **Acceptance Criteria:**
-- [ ] Delete button triggers a confirmation dialog ("Are you sure? This cannot be undone.")
-- [ ] Dialog shows the group name being deleted
-- [ ] "Cancel" closes dialog without action
-- [ ] "Delete" sends `DELETE /api/groups/{id}` and removes from list
-- [ ] Success feedback after deletion
-- [ ] Typecheck passes
+- [x] Delete button triggers a confirmation dialog ("Are you sure? This cannot be undone.")
+- [x] Dialog shows the group name being deleted
+- [x] "Cancel" closes dialog without action
+- [x] "Delete" sends `DELETE /api/groups/{id}` and removes from list
+- [x] Success feedback after deletion
+- [x] Typecheck passes
 
 ## Functional Requirements
 

@@ -4,7 +4,7 @@ import type { BingoState } from './bingo.ts';
 import {
   mountApp, renderBoard, updateCell, showLoading, showError, clearStatus,
   showGroupList, showGroupSelectorLoading, showGroupSelectorError, showGameView,
-  showDeleteConfirmDialog, showGroupCreateForm, showGroupEditForm,
+  showDeleteConfirmDialog, showGroupCreateForm, showGroupEditForm, showToast,
 } from './renderer.ts';
 import type { GroupDisplayInfo } from './renderer.ts';
 import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup } from './api.ts';
@@ -38,6 +38,7 @@ function showGroupListWithActions(): void {
           await deleteGroup(id);
           cachedGroups = cachedGroups.filter(g => g.id !== id);
           showGroupListWithActions();
+          showToast(`„${name}" wurde gelöscht`);
         } catch (err) {
           showGroupSelectorError(`Fehler beim Löschen: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
         }

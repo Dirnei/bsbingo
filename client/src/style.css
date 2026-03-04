@@ -661,6 +661,30 @@ button.primary:hover {
   border: none;
 }
 
+/* Toast Notification */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--bg);
+  background: var(--win);
+  padding: 12px 24px;
+  border: 1px solid var(--win);
+  z-index: 1100;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+}
+
+.toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 footer {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;
