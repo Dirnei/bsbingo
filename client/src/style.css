@@ -281,6 +281,84 @@ button.primary:hover {
   display: block;
 }
 
+.hidden {
+  display: none !important;
+}
+
+/* Group Selector */
+.group-selector-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.group-selector-status {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-align: center;
+  padding: 24px;
+  color: var(--text-dim);
+}
+
+.group-selector-status.error {
+  color: #ff4444;
+}
+
+.group-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto 24px;
+}
+
+.group-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.group-card:hover {
+  border-color: var(--accent);
+}
+
+.group-card-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px;
+  letter-spacing: 2px;
+  color: var(--text);
+  margin-bottom: 8px;
+  transition: color 0.18s;
+}
+
+.group-card:hover .group-card-name {
+  color: var(--accent);
+}
+
+.group-card-desc {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.group-card-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
 footer {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;

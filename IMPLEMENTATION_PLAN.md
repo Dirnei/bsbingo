@@ -108,12 +108,12 @@ The existing prototype is a fully working 5x5 bingo board with shuffle, mark, bi
 **Description:** As a player, I want to choose a word group before starting a game so I can play with different sets of buzzwords.
 
 **Acceptance Criteria:**
-- [ ] Group selector shown before the game board (home page or overlay)
-- [ ] Fetches available groups from `GET /api/groups`
-- [ ] Each group shows name, description, and word count
-- [ ] Clicking a group starts a new game with that group's words
-- [ ] Matches the existing dark industrial aesthetic
-- [ ] Typecheck passes
+- [x] Group selector shown before the game board (home page or overlay)
+- [x] Fetches available groups from `GET /api/groups`
+- [x] Each group shows name, description, and word count
+- [x] Clicking a group starts a new game with that group's words
+- [x] Matches the existing dark industrial aesthetic
+- [x] Typecheck passes
 
 ### Task-010: Docker Compose setup
 **Description:** As a developer, I need a Docker Compose configuration so the full stack (backend + MongoDB) can be started with a single command.

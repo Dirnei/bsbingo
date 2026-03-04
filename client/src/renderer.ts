@@ -5,6 +5,7 @@ export interface RenderCallbacks {
   onCellClick: (index: number) => void;
   onNewGame: () => void;
   onReset: () => void;
+  onGroupSelect: (groupId: string) => void;
 }
 
 let boardEl: HTMLDivElement;
@@ -13,6 +14,8 @@ let countEl: HTMLSpanElement;
 let bingosEl: HTMLSpanElement;
 let bannerEl: HTMLDivElement;
 let bannerSubEl: HTMLDivElement;
+let groupSelectorEl: HTMLDivElement;
+let gameViewEl: HTMLDivElement;
 
 export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): void {
   container.innerHTML = `
@@ -22,18 +25,23 @@ export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): vo
       <div class="subtitle">// Smart Factory Edition · Klick auf ein Feld wenn du es hörst</div>
     </header>
 
-    <div class="controls">
-      <button class="primary" id="btn-new">⟳ Neues Spiel</button>
-      <button id="btn-reset">✕ Reset</button>
+    <div id="group-selector" class="group-selector"></div>
+
+    <div id="game-view" class="game-view hidden">
+      <div class="controls">
+        <button class="primary" id="btn-new">⟳ Neues Spiel</button>
+        <button id="btn-reset">✕ Reset</button>
+        <button id="btn-groups">☰ Gruppen</button>
+      </div>
+
+      <div class="counter">Markiert: <span id="count">0</span> / 24 &nbsp;|&nbsp; Bingos: <span id="bingos">0</span></div>
+
+      <div class="bingo-banner" id="bingo-banner">🎉 BINGO! 🎉</div>
+      <div class="bingo-sub" id="bingo-sub">Jetzt kannst du aufhören zuzuhören.</div>
+
+      <div class="board-status" id="board-status"></div>
+      <div class="board" id="board"></div>
     </div>
-
-    <div class="counter">Markiert: <span id="count">0</span> / 24 &nbsp;|&nbsp; Bingos: <span id="bingos">0</span></div>
-
-    <div class="bingo-banner" id="bingo-banner">🎉 BINGO! 🎉</div>
-    <div class="bingo-sub" id="bingo-sub">Jetzt kannst du aufhören zuzuhören.</div>
-
-    <div class="board-status" id="board-status"></div>
-    <div class="board" id="board"></div>
 
     <footer>
       Dieses Spiel ist rein satirisch und dient der psychischen Selbstverteidigung.<br>
@@ -41,6 +49,8 @@ export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): vo
     </footer>
   `;
 
+  groupSelectorEl = container.querySelector<HTMLDivElement>('#group-selector')!;
+  gameViewEl = container.querySelector<HTMLDivElement>('#game-view')!;
   boardEl = container.querySelector<HTMLDivElement>('#board')!;
   statusEl = container.querySelector<HTMLDivElement>('#board-status')!;
   countEl = container.querySelector<HTMLSpanElement>('#count')!;
@@ -59,6 +69,14 @@ export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): vo
     if (!isFreeSpace(index)) {
       callbacks.onCellClick(index);
     }
+  });
+
+  // Delegate group card clicks
+  groupSelectorEl.addEventListener('click', (e) => {
+    const card = (e.target as HTMLElement).closest<HTMLElement>('.group-card');
+    if (!card) return;
+    const groupId = card.dataset.groupId;
+    if (groupId) callbacks.onGroupSelect(groupId);
   });
 }
 
@@ -132,4 +150,63 @@ export function showError(message: string): void {
 export function clearStatus(): void {
   statusEl.textContent = '';
   statusEl.className = 'board-status';
+}
+
+export interface GroupDisplayInfo {
+  id: string;
+  name: string;
+  description: string;
+  wordCount: number;
+}
+
+export function showGroupSelector(groups: GroupDisplayInfo[]): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+
+  if (groups.length === 0) {
+    groupSelectorEl.innerHTML = `
+      <div class="group-selector-status">Keine Wortgruppen gefunden.</div>
+    `;
+    return;
+  }
+
+  groupSelectorEl.innerHTML = `
+    <div class="group-selector-title">Wähle eine Wortgruppe</div>
+    <div class="group-cards">
+      ${groups.map(g => `
+        <div class="group-card" data-group-id="${g.id}">
+          <div class="group-card-name">${g.name}</div>
+          <div class="group-card-desc">${g.description || 'Keine Beschreibung'}</div>
+          <div class="group-card-count">${g.wordCount} Wörter</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+export function showGroupSelectorLoading(): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+  groupSelectorEl.innerHTML = `
+    <div class="group-selector-status loading">Lade Gruppen…</div>
+  `;
+}
+
+export function showGroupSelectorError(message: string): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+  groupSelectorEl.innerHTML = `
+    <div class="group-selector-status error">${message}</div>
+  `;
+}
+
+export function showGameView(onBackToGroups: () => void): void {
+  groupSelectorEl.classList.add('hidden');
+  gameViewEl.classList.remove('hidden');
+
+  const btnGroups = gameViewEl.querySelector<HTMLButtonElement>('#btn-groups')!;
+  // Replace to remove old listeners
+  const newBtn = btnGroups.cloneNode(true) as HTMLButtonElement;
+  btnGroups.parentNode!.replaceChild(newBtn, btnGroups);
+  newBtn.addEventListener('click', onBackToGroups);
 }
