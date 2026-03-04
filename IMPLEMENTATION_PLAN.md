@@ -81,13 +81,13 @@ Add full CRUD capabilities for word groups so anyone (anonymous, no auth require
 **Description:** As a user, I want to edit an existing word group to update its name, description, or words.
 
 **Acceptance Criteria:**
-- [ ] Page at `/groups/{id}/edit`
-- [ ] Pre-populated with existing group data (fetched from `GET /api/groups/{id}`)
-- [ ] Same form layout as create page (reuses word list editor)
-- [ ] "Save" button submits to `PUT /api/groups/{id}`
-- [ ] Loading state while fetching group data
-- [ ] 404 handling if group doesn't exist
-- [ ] Typecheck passes
+- [x] Page at `/groups/{id}/edit`
+- [x] Pre-populated with existing group data (fetched from `GET /api/groups/{id}`)
+- [x] Same form layout as create page (reuses word list editor)
+- [x] "Save" button submits to `PUT /api/groups/{id}`
+- [x] Loading state while fetching group data
+- [x] 404 handling if group doesn't exist
+- [x] Typecheck passes
 
 ### US-007: Delete group with confirmation
 **Description:** As a user, I want a confirmation dialog before deleting a group so I don't accidentally lose my word collection.

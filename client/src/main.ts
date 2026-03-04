@@ -4,10 +4,10 @@ import type { BingoState } from './bingo.ts';
 import {
   mountApp, renderBoard, updateCell, showLoading, showError, clearStatus,
   showGroupList, showGroupSelectorLoading, showGroupSelectorError, showGameView,
-  showDeleteConfirmDialog, showGroupCreateForm,
+  showDeleteConfirmDialog, showGroupCreateForm, showGroupEditForm,
 } from './renderer.ts';
 import type { GroupDisplayInfo } from './renderer.ts';
-import { fetchGroups, fetchBoard, deleteGroup, createGroup } from './api.ts';
+import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
 
 let state: BingoState;
@@ -111,9 +111,30 @@ registerRoutes([
   },
   {
     pattern: '/groups/:id/edit',
-    handler: () => {
-      // Placeholder — will be implemented in US-006
-      showGroupSelectorError('Gruppe bearbeiten — kommt bald!');
+    handler: async (params) => {
+      showGroupSelectorLoading();
+      try {
+        const group = await fetchGroup(params.id);
+        showGroupEditForm({
+          initialName: group.name,
+          initialDescription: group.description ?? '',
+          initialWords: group.words,
+          callbacks: {
+            onSubmit: async (data) => {
+              await updateGroup(params.id, { name: data.name, description: data.description, words: data.words });
+              cachedGroups = await fetchGroups();
+              navigate('/groups');
+            },
+            onCancel: () => navigate('/groups'),
+          },
+        });
+      } catch (err) {
+        if (err instanceof Error && err.message === 'Gruppe nicht gefunden') {
+          showGroupSelectorError('Gruppe nicht gefunden (404)');
+        } else {
+          showGroupSelectorError(`Fehler beim Laden: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
+        }
+      }
     },
   },
   {
