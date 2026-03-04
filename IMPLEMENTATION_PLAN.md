@@ -22,109 +22,109 @@ The existing prototype is a fully working 5x5 bingo board with shuffle, mark, bi
 **Description:** As a developer, I need the project scaffolded with ASP.NET Core, Akka.NET (via Akka.Hosting + Servus.Akka), and MongoDB so I can build features on a solid foundation.
 
 **Acceptance Criteria:**
-- [ ] Solution contains `src/BsBingo.Server` (C# backend) and `client/` (Vite + TypeScript frontend)
-- [ ] ASP.NET Core host starts with Akka.NET actor system via Akka.Hosting + Servus.Akka
-- [ ] MongoDB connection configured via `appsettings.json` / environment variables
-- [ ] `docker-compose.yml` runs the app + MongoDB together
-- [ ] Application starts and responds to health check
+- [x] Solution contains `src/BsBingo.Server` (C# backend) and `client/` (Vite + TypeScript frontend)
+- [x] ASP.NET Core host starts with Akka.NET actor system via Akka.Hosting + Servus.Akka
+- [x] MongoDB connection configured via `appsettings.json` / environment variables
+- [x] `docker-compose.yml` runs the app + MongoDB together
+- [x] Application starts and responds to health check
 
 ### Task-002: Create Group data model and MongoDB integration
 **Description:** As a developer, I need a Group document model stored in MongoDB so word groups can be persisted and retrieved.
 
 **Acceptance Criteria:**
-- [ ] Group document model with fields: `_id`, `name`, `description`, `words[]`, `visibility` ("public"), `createdBy` (nullable), `createdAt`, `updatedAt`
-- [ ] MongoDB collection `groups` is created automatically
-- [ ] Group requires `name` and at least 24 words
-- [ ] Typecheck passes
+- [x] Group document model with fields: `_id`, `name`, `description`, `words[]`, `visibility` ("public"), `createdBy` (nullable), `createdAt`, `updatedAt`
+- [x] MongoDB collection `groups` is created automatically
+- [x] Group requires `name` and at least 24 words
+- [x] Typecheck passes
 
 ### Task-003: Implement GroupActor
 **Description:** As a developer, I need a GroupActor that manages word groups via Akka.NET messages so CRUD operations go through the actor system.
 
 **Acceptance Criteria:**
-- [ ] GroupActor registered via Servus.Akka DI integration
-- [ ] Handles `GetAllGroups` message — returns list of all groups
-- [ ] Handles `GetGroupById` message — returns a single group with its words
-- [ ] GroupActor reads from MongoDB
-- [ ] Message types defined in `Messages/` folder
-- [ ] Typecheck passes
+- [x] GroupActor registered via Servus.Akka DI integration
+- [x] Handles `GetAllGroups` message — returns list of all groups
+- [x] Handles `GetGroupById` message — returns a single group with its words
+- [x] GroupActor reads from MongoDB
+- [x] Message types defined in `Messages/` folder
+- [x] Typecheck passes
 
 ### Task-004: Implement GameActor
 **Description:** As a developer, I need a GameActor that generates a randomized 5x5 board from a group's word pool so each game is unique.
 
 **Acceptance Criteria:**
-- [ ] GameActor receives `NewGame { GroupId }` message
-- [ ] Fetches the group's words, shuffles, picks 24, inserts FREE space at center (index 12)
-- [ ] Returns a `Board` with 25 cells in randomized order
-- [ ] Different calls produce different boards (random shuffle)
-- [ ] Typecheck passes
+- [x] GameActor receives `NewGame { GroupId }` message
+- [x] Fetches the group's words, shuffles, picks 24, inserts FREE space at center (index 12)
+- [x] Returns a `Board` with 25 cells in randomized order
+- [x] Different calls produce different boards (random shuffle)
+- [x] Typecheck passes
 
 ### Task-005: Seed default buzzwords on first startup
 **Description:** As a player, I want the "Smart Factory Edition" word group pre-loaded so I can play immediately without creating a group first.
 
 **Acceptance Criteria:**
-- [ ] On first startup, if no groups exist, seed a group named "Smart Factory Edition"
-- [ ] Contains all 40 buzzwords from the existing HTML prototype (Smart Factory, Committed, Zukunftsorientiert, Transparency, Industry 4.0, Module, Roadmap, Quick Win, Synergien nutzen, Alignment, Low Hanging Fruit, Proof of Concept, MVP, Skalierbar, Cloud-native, Holistic, KPI, Platform Strategy, Future-proof, IoT, Edge, DevOps, Innovation, Workshop, Das klaren wir im nachsten Meeting, Ownership, To be defined, Wir sind noch in der Findungsphase, Ganzheitlich, Nachhaltigkeit, Lean, DSGVO-konform, Prozessoptimierung, Das ist nicht in Scope, P3 Replacement, Digital Twin, Connectivity, Predictive Maintenance, Digital Excellence, Pune)
-- [ ] Seed runs only once (idempotent — skips if group already exists)
-- [ ] Typecheck passes
+- [x] On first startup, if no groups exist, seed a group named "Smart Factory Edition"
+- [x] Contains all 40 buzzwords from the existing HTML prototype (Smart Factory, Committed, Zukunftsorientiert, Transparency, Industry 4.0, Module, Roadmap, Quick Win, Synergien nutzen, Alignment, Low Hanging Fruit, Proof of Concept, MVP, Skalierbar, Cloud-native, Holistic, KPI, Platform Strategy, Future-proof, IoT, Edge, DevOps, Innovation, Workshop, Das klaren wir im nachsten Meeting, Ownership, To be defined, Wir sind noch in der Findungsphase, Ganzheitlich, Nachhaltigkeit, Lean, DSGVO-konform, Prozessoptimierung, Das ist nicht in Scope, P3 Replacement, Digital Twin, Connectivity, Predictive Maintenance, Digital Excellence, Pune)
+- [x] Seed runs only once (idempotent — skips if group already exists)
+- [x] Typecheck passes
 
 ### Task-006: Create REST API endpoints
 **Description:** As a frontend developer, I need API endpoints to list groups, get group details, and generate new game boards.
 
 **Acceptance Criteria:**
-- [ ] `GET /api/groups` — returns list of groups (id, name, description, word count)
-- [ ] `GET /api/groups/{id}` — returns group details including all words
-- [ ] `POST /api/game/new?groupId={id}` — returns a randomized 25-cell board
-- [ ] Endpoints use minimal API style (not controllers)
-- [ ] Endpoints route through the actor system (GroupActor / GameActor)
-- [ ] Returns proper HTTP status codes (200, 404)
-- [ ] Typecheck passes
+- [x] `GET /api/groups` — returns list of groups (id, name, description, word count)
+- [x] `GET /api/groups/{id}` — returns group details including all words
+- [x] `POST /api/game/new?groupId={id}` — returns a randomized 25-cell board
+- [x] Endpoints use minimal API style (not controllers)
+- [x] Endpoints route through the actor system (GroupActor / GameActor)
+- [x] Returns proper HTTP status codes (200, 404)
+- [x] Typecheck passes
 
 ### Task-007: Extract frontend into Vite + TypeScript
 **Description:** As a developer, I need the frontend extracted from the single HTML file into a proper Vite + TypeScript project while preserving the existing look and feel.
 
 **Acceptance Criteria:**
-- [ ] Vite + TypeScript project in `client/` directory
-- [ ] CSS ported from `bullshit-bingo.html` (CSS variables, fonts, animations)
-- [ ] Dark industrial aesthetic preserved (colors, grid background, fonts: Bebas Neue, IBM Plex Mono/Sans)
-- [ ] Board component renders a 5x5 grid
-- [ ] Cell component handles mark/unmark toggle
-- [ ] FREE space at center (index 12) is auto-marked and not clickable
-- [ ] Bingo detection works for all 12 lines (5 rows, 5 columns, 2 diagonals)
-- [ ] Bingo banner and counter display correctly
-- [ ] Typecheck passes
+- [x] Vite + TypeScript project in `client/` directory
+- [x] CSS ported from `bullshit-bingo.html` (CSS variables, fonts, animations)
+- [x] Dark industrial aesthetic preserved (colors, grid background, fonts: Bebas Neue, IBM Plex Mono/Sans)
+- [x] Board component renders a 5x5 grid
+- [x] Cell component handles mark/unmark toggle
+- [x] FREE space at center (index 12) is auto-marked and not clickable
+- [x] Bingo detection works for all 12 lines (5 rows, 5 columns, 2 diagonals)
+- [x] Bingo banner and counter display correctly
+- [x] Typecheck passes
 
 ### Task-008: Fetch words from API instead of hardcoded array
 **Description:** As a player, I want the game to load words from the server so different word groups can be used.
 
 **Acceptance Criteria:**
-- [ ] Frontend fetches board from `POST /api/game/new?groupId={id}`
-- [ ] Board renders the 25 words returned by the API
-- [ ] No hardcoded word arrays in the frontend
-- [ ] Loading state shown while fetching
-- [ ] Error state shown if API call fails
-- [ ] Typecheck passes
+- [x] Frontend fetches board from `POST /api/game/new?groupId={id}`
+- [x] Board renders the 25 words returned by the API
+- [x] No hardcoded word arrays in the frontend
+- [x] Loading state shown while fetching
+- [x] Error state shown if API call fails
+- [x] Typecheck passes
 
 ### Task-009: Group selector UI
 **Description:** As a player, I want to choose a word group before starting a game so I can play with different sets of buzzwords.
 
 **Acceptance Criteria:**
-- [ ] Group selector shown before the game board (home page or overlay)
-- [ ] Fetches available groups from `GET /api/groups`
-- [ ] Each group shows name, description, and word count
-- [ ] Clicking a group starts a new game with that group's words
-- [ ] Matches the existing dark industrial aesthetic
-- [ ] Typecheck passes
+- [x] Group selector shown before the game board (home page or overlay)
+- [x] Fetches available groups from `GET /api/groups`
+- [x] Each group shows name, description, and word count
+- [x] Clicking a group starts a new game with that group's words
+- [x] Matches the existing dark industrial aesthetic
+- [x] Typecheck passes
 
 ### Task-010: Docker Compose setup
 **Description:** As a developer, I need a Docker Compose configuration so the full stack (backend + MongoDB) can be started with a single command.
 
 **Acceptance Criteria:**
-- [ ] `docker-compose.yml` at project root
-- [ ] MongoDB service with persistent volume
-- [ ] Backend service with connection to MongoDB
-- [ ] Frontend either served by backend or via Vite dev proxy
-- [ ] `docker compose up` starts the full application
-- [ ] Environment variables for MongoDB URI configurable
+- [x] `docker-compose.yml` at project root
+- [x] MongoDB service with persistent volume
+- [x] Backend service with connection to MongoDB
+- [x] Frontend either served by backend or via Vite dev proxy
+- [x] `docker compose up` starts the full application
+- [x] Environment variables for MongoDB URI configurable
 
 ## Functional Requirements
 
