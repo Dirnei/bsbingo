@@ -101,6 +101,27 @@ button.primary:hover {
   color: #000;
 }
 
+.board-status {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-align: center;
+  padding: 12px;
+  min-height: 0;
+}
+
+.board-status:empty {
+  display: none;
+}
+
+.board-status.loading {
+  color: var(--text-dim);
+}
+
+.board-status.error {
+  color: #ff4444;
+}
+
 .board {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

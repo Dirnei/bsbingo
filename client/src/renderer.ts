@@ -8,6 +8,7 @@ export interface RenderCallbacks {
 }
 
 let boardEl: HTMLDivElement;
+let statusEl: HTMLDivElement;
 let countEl: HTMLSpanElement;
 let bingosEl: HTMLSpanElement;
 let bannerEl: HTMLDivElement;
@@ -31,6 +32,7 @@ export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): vo
     <div class="bingo-banner" id="bingo-banner">🎉 BINGO! 🎉</div>
     <div class="bingo-sub" id="bingo-sub">Jetzt kannst du aufhören zuzuhören.</div>
 
+    <div class="board-status" id="board-status"></div>
     <div class="board" id="board"></div>
 
     <footer>
@@ -40,6 +42,7 @@ export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): vo
   `;
 
   boardEl = container.querySelector<HTMLDivElement>('#board')!;
+  statusEl = container.querySelector<HTMLDivElement>('#board-status')!;
   countEl = container.querySelector<HTMLSpanElement>('#count')!;
   bingosEl = container.querySelector<HTMLSpanElement>('#bingos')!;
   bannerEl = container.querySelector<HTMLDivElement>('#bingo-banner')!;
@@ -112,4 +115,21 @@ function updateStatus(state: BingoState): void {
   const hasBingo = state.bingoCount > 0;
   bannerEl.classList.toggle('visible', hasBingo);
   bannerSubEl.classList.toggle('visible', hasBingo);
+}
+
+export function showLoading(): void {
+  boardEl.innerHTML = '';
+  statusEl.textContent = 'Lade Spielfeld…';
+  statusEl.className = 'board-status loading';
+}
+
+export function showError(message: string): void {
+  boardEl.innerHTML = '';
+  statusEl.textContent = message;
+  statusEl.className = 'board-status error';
+}
+
+export function clearStatus(): void {
+  statusEl.textContent = '';
+  statusEl.className = 'board-status';
 }

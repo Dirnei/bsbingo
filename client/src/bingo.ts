@@ -14,15 +14,15 @@ export interface BingoState {
   bingoIndexes: Set<number>;
 }
 
-export function createBoard(words: string[]): BingoState {
-  const shuffled = [...words].sort(() => Math.random() - 0.5);
-  const picked = shuffled.slice(0, 24);
-  picked.splice(FREE_INDEX, 0, "FREE\n☕");
+export function createBoardFromCells(cells: { index: number; text: string; isFreeSpace: boolean }[]): BingoState {
+  const board = cells
+    .sort((a, b) => a.index - b.index)
+    .map(c => c.isFreeSpace ? "FREE\n☕" : c.text);
 
   const marked = new Set<number>([FREE_INDEX]);
 
   return {
-    board: picked,
+    board,
     marked,
     bingoCount: 0,
     bingoIndexes: new Set(),
@@ -77,17 +77,3 @@ function detectBingo(marked: Set<number>): { bingoCount: number; bingoIndexes: S
   return { bingoCount, bingoIndexes };
 }
 
-/** Default hardcoded words — used as fallback until API integration (Task-008) */
-export const DEFAULT_WORDS: string[] = [
-  "Smart Factory", "Committed", "Zukunftsorientiert", "Transparency",
-  "Industry 4.0", "Module", "Roadmap", "Quick Win",
-  "Synergien\nnutzen", "Alignment", "Low Hanging\nFruit", "Proof of\nConcept",
-  "MVP", "Skalierbar", "Cloud-native", "Holistic",
-  "KPI", "Platform\nStrategy", "Future-proof", "IoT",
-  "Edge", "DevOps", "Innovation", "Workshop",
-  "Das klären wir\nim nächsten\nMeeting", "Ownership", "To be defined",
-  "Wir sind noch\nin der Findungs-\nphase", "Ganzheitlich", "Nachhaltigkeit",
-  "Lean", "DSGVO-konform", "Prozess-\noptimierung", "Das ist nicht\nin Scope",
-  "P3 Replacement", "Digital Twin", "Connectivity", "Predictive\nMaintenance",
-  "Digital\nExcellence", "Pune",
-];

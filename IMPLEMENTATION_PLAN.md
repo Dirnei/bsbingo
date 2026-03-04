@@ -97,12 +97,12 @@ The existing prototype is a fully working 5x5 bingo board with shuffle, mark, bi
 **Description:** As a player, I want the game to load words from the server so different word groups can be used.
 
 **Acceptance Criteria:**
-- [ ] Frontend fetches board from `POST /api/game/new?groupId={id}`
-- [ ] Board renders the 25 words returned by the API
-- [ ] No hardcoded word arrays in the frontend
-- [ ] Loading state shown while fetching
-- [ ] Error state shown if API call fails
-- [ ] Typecheck passes
+- [x] Frontend fetches board from `POST /api/game/new?groupId={id}`
+- [x] Board renders the 25 words returned by the API
+- [x] No hardcoded word arrays in the frontend
+- [x] Loading state shown while fetching
+- [x] Error state shown if API call fails
+- [x] Typecheck passes
 
 ### Task-009: Group selector UI
 **Description:** As a player, I want to choose a word group before starting a game so I can play with different sets of buzzwords.
