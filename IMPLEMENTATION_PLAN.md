@@ -62,10 +62,10 @@ The existing prototype is a fully working 5x5 bingo board with shuffle, mark, bi
 **Description:** As a player, I want the "Smart Factory Edition" word group pre-loaded so I can play immediately without creating a group first.
 
 **Acceptance Criteria:**
-- [ ] On first startup, if no groups exist, seed a group named "Smart Factory Edition"
-- [ ] Contains all 40 buzzwords from the existing HTML prototype (Smart Factory, Committed, Zukunftsorientiert, Transparency, Industry 4.0, Module, Roadmap, Quick Win, Synergien nutzen, Alignment, Low Hanging Fruit, Proof of Concept, MVP, Skalierbar, Cloud-native, Holistic, KPI, Platform Strategy, Future-proof, IoT, Edge, DevOps, Innovation, Workshop, Das klaren wir im nachsten Meeting, Ownership, To be defined, Wir sind noch in der Findungsphase, Ganzheitlich, Nachhaltigkeit, Lean, DSGVO-konform, Prozessoptimierung, Das ist nicht in Scope, P3 Replacement, Digital Twin, Connectivity, Predictive Maintenance, Digital Excellence, Pune)
-- [ ] Seed runs only once (idempotent — skips if group already exists)
-- [ ] Typecheck passes
+- [x] On first startup, if no groups exist, seed a group named "Smart Factory Edition"
+- [x] Contains all 40 buzzwords from the existing HTML prototype (Smart Factory, Committed, Zukunftsorientiert, Transparency, Industry 4.0, Module, Roadmap, Quick Win, Synergien nutzen, Alignment, Low Hanging Fruit, Proof of Concept, MVP, Skalierbar, Cloud-native, Holistic, KPI, Platform Strategy, Future-proof, IoT, Edge, DevOps, Innovation, Workshop, Das klaren wir im nachsten Meeting, Ownership, To be defined, Wir sind noch in der Findungsphase, Ganzheitlich, Nachhaltigkeit, Lean, DSGVO-konform, Prozessoptimierung, Das ist nicht in Scope, P3 Replacement, Digital Twin, Connectivity, Predictive Maintenance, Digital Excellence, Pune)
+- [x] Seed runs only once (idempotent — skips if group already exists)
+- [x] Typecheck passes
 
 ### Task-006: Create REST API endpoints
 **Description:** As a frontend developer, I need API endpoints to list groups, get group details, and generate new game boards.

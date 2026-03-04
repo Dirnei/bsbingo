@@ -26,6 +26,9 @@ builder.Services.AddAkka("bsbingo", configurationBuilder =>
     });
 });
 
+// Seed data on first startup
+builder.Services.AddHostedService<SeedDataService>();
+
 // Health checks
 builder.Services.AddHealthChecks();
 
