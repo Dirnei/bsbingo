@@ -18,6 +18,7 @@ let bannerEl: HTMLDivElement;
 let bannerSubEl: HTMLDivElement;
 let groupSelectorEl: HTMLDivElement;
 let gameViewEl: HTMLDivElement;
+let groupListAbortController: AbortController | null = null;
 
 export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): void {
   container.innerHTML = `
@@ -73,13 +74,7 @@ export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): vo
     }
   });
 
-  // Delegate group card clicks
-  groupSelectorEl.addEventListener('click', (e) => {
-    const card = (e.target as HTMLElement).closest<HTMLElement>('.group-card');
-    if (!card) return;
-    const groupId = card.dataset.groupId;
-    if (groupId) callbacks.onGroupSelect(groupId);
-  });
+  // Group card clicks are handled by showGroupList's action buttons
 }
 
 export function renderBoard(state: BingoState): void {
@@ -201,7 +196,12 @@ export function showGroupList(
     </div>
   `;
 
-  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')!.addEventListener('click', callbacks.onCreate);
+  // Abort previous listener to prevent accumulation
+  if (groupListAbortController) groupListAbortController.abort();
+  groupListAbortController = new AbortController();
+  const signal = groupListAbortController.signal;
+
+  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')!.addEventListener('click', callbacks.onCreate, { signal });
 
   groupSelectorEl.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
@@ -218,7 +218,7 @@ export function showGroupList(
       const name = card.querySelector('.group-card-name')?.textContent ?? '';
       callbacks.onDelete(groupId, name);
     }
-  });
+  }, { signal });
 }
 
 /** @deprecated Use showGroupList instead — kept for game flow compatibility */
