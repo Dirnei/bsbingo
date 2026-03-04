@@ -29,13 +29,13 @@ Add full CRUD capabilities for word groups so anyone (anonymous, no auth require
 **Description:** As a frontend developer, I need CRUD API endpoints for groups so the UI can manage them.
 
 **Acceptance Criteria:**
-- [ ] `POST /api/groups` — create a new group (body: name, description, words)
-- [ ] `PUT /api/groups/{id}` — update an existing group
-- [ ] `DELETE /api/groups/{id}` — delete a group
-- [ ] Returns 201 on create with the new group
-- [ ] Returns 400 with validation errors (missing name, fewer than 24 words)
-- [ ] Returns 404 when group not found on update/delete
-- [ ] Typecheck passes
+- [x] `POST /api/groups` — create a new group (body: name, description, words)
+- [x] `PUT /api/groups/{id}` — update an existing group
+- [x] `DELETE /api/groups/{id}` — delete a group
+- [x] Returns 201 on create with the new group
+- [x] Returns 400 with validation errors (missing name, fewer than 24 words)
+- [x] Returns 404 when group not found on update/delete
+- [x] Typecheck passes
 
 ### US-003: Group list page
 **Description:** As a user, I want to see all available word groups in a list so I can browse, play, edit, or delete them.

@@ -62,6 +62,53 @@ app.MapGet("/api/groups/{id}", async (string id, IRequiredActor<GroupActor> grou
     return group is null ? Results.NotFound() : Results.Ok(group);
 });
 
+// POST /api/groups — create a new group
+app.MapPost("/api/groups", async (CreateGroupRequest request, IRequiredActor<GroupActor> groupActor) =>
+{
+    var result = await groupActor.ActorRef.Ask<GroupResult>(
+        new CreateGroup(request.Name, request.Description, request.Words), askTimeout);
+
+    if (!result.Success)
+        return Results.BadRequest(new { error = result.Error });
+
+    var group = (Group)result.Data!;
+    return Results.Created($"/api/groups/{group.Id}", new
+    {
+        group.Id,
+        group.Name,
+        group.Description,
+        WordCount = group.Words.Count
+    });
+});
+
+// PUT /api/groups/{id} — update an existing group
+app.MapPut("/api/groups/{id}", async (string id, UpdateGroupRequest request, IRequiredActor<GroupActor> groupActor) =>
+{
+    var result = await groupActor.ActorRef.Ask<GroupResult>(
+        new UpdateGroup(id, request.Name, request.Description, request.Words), askTimeout);
+
+    if (!result.Success)
+    {
+        return result.Error == "Group not found"
+            ? Results.NotFound(new { error = result.Error })
+            : Results.BadRequest(new { error = result.Error });
+    }
+
+    return Results.Ok(result.Data);
+});
+
+// DELETE /api/groups/{id} — delete a group
+app.MapDelete("/api/groups/{id}", async (string id, IRequiredActor<GroupActor> groupActor) =>
+{
+    var result = await groupActor.ActorRef.Ask<GroupResult>(
+        new DeleteGroup(id), askTimeout);
+
+    if (!result.Success)
+        return Results.NotFound(new { error = result.Error });
+
+    return Results.NoContent();
+});
+
 // POST /api/game/new?groupId={id} — generate a randomized 25-cell board
 app.MapPost("/api/game/new", async (string groupId, IRequiredActor<GameActor> gameActor) =>
 {
@@ -70,3 +117,7 @@ app.MapPost("/api/game/new", async (string groupId, IRequiredActor<GameActor> ga
 });
 
 app.Run();
+
+// Request DTOs
+public sealed record CreateGroupRequest(string Name, string? Description, List<string> Words);
+public sealed record UpdateGroupRequest(string Name, string? Description, List<string> Words);
