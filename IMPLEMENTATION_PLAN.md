@@ -119,12 +119,12 @@ The existing prototype is a fully working 5x5 bingo board with shuffle, mark, bi
 **Description:** As a developer, I need a Docker Compose configuration so the full stack (backend + MongoDB) can be started with a single command.
 
 **Acceptance Criteria:**
-- [ ] `docker-compose.yml` at project root
-- [ ] MongoDB service with persistent volume
-- [ ] Backend service with connection to MongoDB
-- [ ] Frontend either served by backend or via Vite dev proxy
-- [ ] `docker compose up` starts the full application
-- [ ] Environment variables for MongoDB URI configurable
+- [x] `docker-compose.yml` at project root
+- [x] MongoDB service with persistent volume
+- [x] Backend service with connection to MongoDB
+- [x] Frontend either served by backend or via Vite dev proxy
+- [x] `docker compose up` starts the full application
+- [x] Environment variables for MongoDB URI configurable
 
 ## Functional Requirements
 
