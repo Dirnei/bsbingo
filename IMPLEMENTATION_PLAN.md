@@ -22,11 +22,11 @@ The existing prototype is a fully working 5x5 bingo board with shuffle, mark, bi
 **Description:** As a developer, I need the project scaffolded with ASP.NET Core, Akka.NET (via Akka.Hosting + Servus.Akka), and MongoDB so I can build features on a solid foundation.
 
 **Acceptance Criteria:**
-- [ ] Solution contains `src/BsBingo.Server` (C# backend) and `client/` (Vite + TypeScript frontend)
-- [ ] ASP.NET Core host starts with Akka.NET actor system via Akka.Hosting + Servus.Akka
-- [ ] MongoDB connection configured via `appsettings.json` / environment variables
-- [ ] `docker-compose.yml` runs the app + MongoDB together
-- [ ] Application starts and responds to health check
+- [x] Solution contains `src/BsBingo.Server` (C# backend) and `client/` (Vite + TypeScript frontend)
+- [x] ASP.NET Core host starts with Akka.NET actor system via Akka.Hosting + Servus.Akka
+- [x] MongoDB connection configured via `appsettings.json` / environment variables
+- [x] `docker-compose.yml` runs the app + MongoDB together
+- [x] Application starts and responds to health check
 
 ### Task-002: Create Group data model and MongoDB integration
 **Description:** As a developer, I need a Group document model stored in MongoDB so word groups can be persisted and retrieved.
