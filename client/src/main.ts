@@ -1,24 +1,25 @@
-import './style.css'
-import typescriptLogo from './typescript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.ts'
+import './style.css';
+import { createBoard, toggleCell, resetMarks, DEFAULT_WORDS } from './bingo.ts';
+import type { BingoState } from './bingo.ts';
+import { mountApp, renderBoard, updateCell } from './renderer.ts';
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
+let state: BingoState;
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+function newGame(): void {
+  state = createBoard(DEFAULT_WORDS);
+  renderBoard(state);
+}
+
+function onCellClick(index: number): void {
+  state = toggleCell(state, index);
+  updateCell(state, index);
+}
+
+function onReset(): void {
+  state = resetMarks(state);
+  renderBoard(state);
+}
+
+const app = document.querySelector<HTMLDivElement>('#app')!;
+mountApp(app, { onCellClick, onNewGame: newGame, onReset });
+newGame();

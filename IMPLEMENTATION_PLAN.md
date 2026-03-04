@@ -83,15 +83,15 @@ The existing prototype is a fully working 5x5 bingo board with shuffle, mark, bi
 **Description:** As a developer, I need the frontend extracted from the single HTML file into a proper Vite + TypeScript project while preserving the existing look and feel.
 
 **Acceptance Criteria:**
-- [ ] Vite + TypeScript project in `client/` directory
-- [ ] CSS ported from `bullshit-bingo.html` (CSS variables, fonts, animations)
-- [ ] Dark industrial aesthetic preserved (colors, grid background, fonts: Bebas Neue, IBM Plex Mono/Sans)
-- [ ] Board component renders a 5x5 grid
-- [ ] Cell component handles mark/unmark toggle
-- [ ] FREE space at center (index 12) is auto-marked and not clickable
-- [ ] Bingo detection works for all 12 lines (5 rows, 5 columns, 2 diagonals)
-- [ ] Bingo banner and counter display correctly
-- [ ] Typecheck passes
+- [x] Vite + TypeScript project in `client/` directory
+- [x] CSS ported from `bullshit-bingo.html` (CSS variables, fonts, animations)
+- [x] Dark industrial aesthetic preserved (colors, grid background, fonts: Bebas Neue, IBM Plex Mono/Sans)
+- [x] Board component renders a 5x5 grid
+- [x] Cell component handles mark/unmark toggle
+- [x] FREE space at center (index 12) is auto-marked and not clickable
+- [x] Bingo detection works for all 12 lines (5 rows, 5 columns, 2 diagonals)
+- [x] Bingo banner and counter display correctly
+- [x] Typecheck passes
 
 ### Task-008: Fetch words from API instead of hardcoded array
 **Description:** As a player, I want the game to load words from the server so different word groups can be used.
