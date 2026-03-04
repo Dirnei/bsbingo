@@ -4,10 +4,10 @@ import type { BingoState } from './bingo.ts';
 import {
   mountApp, renderBoard, updateCell, showLoading, showError, clearStatus,
   showGroupList, showGroupSelectorLoading, showGroupSelectorError, showGameView,
-  showDeleteConfirmDialog,
+  showDeleteConfirmDialog, showGroupCreateForm,
 } from './renderer.ts';
 import type { GroupDisplayInfo } from './renderer.ts';
-import { fetchGroups, fetchBoard, deleteGroup } from './api.ts';
+import { fetchGroups, fetchBoard, deleteGroup, createGroup } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
 
 let state: BingoState;
@@ -99,8 +99,14 @@ registerRoutes([
   {
     pattern: '/groups/new',
     handler: () => {
-      // Placeholder — will be implemented in US-004
-      showGroupSelectorError('Neue Gruppe erstellen — kommt bald!');
+      showGroupCreateForm({
+        onSubmit: async (data) => {
+          await createGroup({ name: data.name, description: data.description, words: data.words });
+          cachedGroups = await fetchGroups();
+          navigate('/groups');
+        },
+        onCancel: () => navigate('/groups'),
+      });
     },
   },
   {

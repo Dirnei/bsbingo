@@ -503,6 +503,164 @@ button.primary:hover {
   color: #000;
 }
 
+/* Group Form */
+.form-container {
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.form-header .group-selector-title {
+  margin-bottom: 0;
+}
+
+.form-cancel-btn {
+  font-size: 11px;
+  padding: 8px 16px;
+}
+
+.form-field {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.form-input {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.form-input::placeholder {
+  color: var(--muted);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.form-error {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: #ff4444;
+  margin-top: 6px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+/* Word Editor */
+.word-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.word-input-row .word-input {
+  flex: 1;
+}
+
+.word-add-btn {
+  font-size: 11px;
+  padding: 10px 16px;
+  white-space: nowrap;
+}
+
+.word-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.word-count.warning {
+  color: var(--accent);
+}
+
+.word-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 40px;
+}
+
+.word-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 5px 8px 5px 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: grab;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.word-chip:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.word-chip.dragging {
+  opacity: 0.4;
+}
+
+.word-chip.drag-over {
+  border-color: var(--accent);
+  background: var(--hit-bg);
+}
+
+.word-chip-text {
+  pointer-events: none;
+}
+
+.word-chip-remove {
+  font-size: 10px;
+  padding: 2px 4px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s;
+  line-height: 1;
+}
+
+.word-chip-remove:hover {
+  color: #ff4444;
+  border: none;
+}
+
 footer {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;

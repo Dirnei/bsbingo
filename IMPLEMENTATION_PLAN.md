@@ -54,14 +54,14 @@ Add full CRUD capabilities for word groups so anyone (anonymous, no auth require
 **Description:** As a user, I want to create a new word group by entering a name, description, and list of words.
 
 **Acceptance Criteria:**
-- [ ] Page at `/groups/new`
-- [ ] Form fields: name (required), description (optional)
-- [ ] Word list editor component (see US-005)
-- [ ] "Save" button submits to `POST /api/groups`
-- [ ] Client-side validation: name required, at least 24 words
-- [ ] On success, navigates to group list with success feedback
-- [ ] On error, shows validation messages inline
-- [ ] Typecheck passes
+- [x] Page at `/groups/new`
+- [x] Form fields: name (required), description (optional)
+- [x] Word list editor component (see US-005)
+- [x] "Save" button submits to `POST /api/groups`
+- [x] Client-side validation: name required, at least 24 words
+- [x] On success, navigates to group list with success feedback
+- [x] On error, shows validation messages inline
+- [x] Typecheck passes
 
 ### US-005: Word list editor component
 **Description:** As a user, I want an intuitive word list editor so I can build my buzzword collection easily.

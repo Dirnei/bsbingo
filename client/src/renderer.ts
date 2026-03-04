@@ -290,6 +290,242 @@ export function showDeleteConfirmDialog(
   });
 }
 
+export interface GroupFormCallbacks {
+  onSubmit: (data: { name: string; description: string; words: string[] }) => Promise<void>;
+  onCancel: () => void;
+}
+
+export function showGroupCreateForm(callbacks: GroupFormCallbacks): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+
+  const words: string[] = [];
+  let submitting = false;
+
+  function render(): void {
+    groupSelectorEl.innerHTML = `
+      <div class="form-container">
+        <div class="form-header">
+          <div class="group-selector-title">Neue Gruppe</div>
+          <button class="form-cancel-btn" id="form-cancel">← Zurück</button>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="group-name">Name *</label>
+          <input class="form-input" type="text" id="group-name" placeholder="z.B. Smart Factory Buzzwords" maxlength="100" />
+          <div class="form-error hidden" id="name-error"></div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="group-desc">Beschreibung</label>
+          <input class="form-input" type="text" id="group-desc" placeholder="Optionale Beschreibung" maxlength="200" />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Wörter</label>
+          <div class="word-editor">
+            <div class="word-input-row">
+              <input class="form-input word-input" type="text" id="word-input" placeholder="Neues Wort eingeben…" maxlength="60" />
+              <button class="primary word-add-btn" id="btn-add-word">+ Hinzufügen</button>
+            </div>
+            <div class="word-count ${words.length < 24 ? 'warning' : ''}" id="word-count">
+              ${words.length} Wörter — ${words.length < 24 ? `noch ${24 - words.length} benötigt (min. 24)` : 'Minimum erreicht ✓'}
+            </div>
+            <div class="form-error hidden" id="words-error"></div>
+            <div class="word-list" id="word-list">
+              ${words.map((w, i) => `
+                <div class="word-chip" data-index="${i}" draggable="true">
+                  <span class="word-chip-text">${escapeHtml(w)}</span>
+                  <button class="word-chip-remove" data-remove="${i}" title="Entfernen">✕</button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="form-error hidden" id="submit-error"></div>
+
+        <div class="form-actions">
+          <button id="form-cancel-btn">Abbrechen</button>
+          <button class="primary" id="form-submit" ${submitting ? 'disabled' : ''}>
+            ${submitting ? 'Speichern…' : '✓ Speichern'}
+          </button>
+        </div>
+      </div>
+    `;
+
+    attachEvents();
+  }
+
+  // Cache form values across re-renders
+  let cachedName = '';
+  let cachedDesc = '';
+
+  function saveFormValues(): void {
+    const nameEl = groupSelectorEl.querySelector<HTMLInputElement>('#group-name');
+    const descEl = groupSelectorEl.querySelector<HTMLInputElement>('#group-desc');
+    if (nameEl) cachedName = nameEl.value;
+    if (descEl) cachedDesc = descEl.value;
+  }
+
+  function restoreFormValues(): void {
+    const nameEl = groupSelectorEl.querySelector<HTMLInputElement>('#group-name');
+    const descEl = groupSelectorEl.querySelector<HTMLInputElement>('#group-desc');
+    if (nameEl) nameEl.value = cachedName;
+    if (descEl) descEl.value = cachedDesc;
+  }
+
+  let dragSrcIndex: number | null = null;
+
+  function attachEvents(): void {
+    restoreFormValues();
+
+    const wordInput = groupSelectorEl.querySelector<HTMLInputElement>('#word-input')!;
+    const addBtn = groupSelectorEl.querySelector<HTMLButtonElement>('#btn-add-word')!;
+
+    function addWord(): void {
+      const val = wordInput.value.trim();
+      if (!val) return;
+
+      // Duplicate detection: warn but allow
+      const duplicate = words.some(w => w.toLowerCase() === val.toLowerCase());
+      if (duplicate) {
+        const countEl = groupSelectorEl.querySelector<HTMLDivElement>('#word-count')!;
+        countEl.textContent = `Duplikat: "${val}" existiert bereits`;
+        countEl.className = 'word-count warning';
+        setTimeout(() => updateWordCount(), 2000);
+      }
+
+      saveFormValues();
+      words.push(val);
+      render();
+      // Focus input for next word
+      groupSelectorEl.querySelector<HTMLInputElement>('#word-input')!.focus();
+    }
+
+    wordInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addWord();
+      }
+    });
+
+    addBtn.addEventListener('click', addWord);
+
+    // Remove word
+    groupSelectorEl.querySelector('#word-list')!.addEventListener('click', (e) => {
+      const removeBtn = (e.target as HTMLElement).closest<HTMLElement>('[data-remove]');
+      if (!removeBtn) return;
+      const idx = Number(removeBtn.dataset.remove);
+      saveFormValues();
+      words.splice(idx, 1);
+      render();
+    });
+
+    // Drag and drop reordering
+    const wordList = groupSelectorEl.querySelector<HTMLDivElement>('#word-list')!;
+    wordList.addEventListener('dragstart', (e) => {
+      const chip = (e.target as HTMLElement).closest<HTMLElement>('.word-chip');
+      if (!chip) return;
+      dragSrcIndex = Number(chip.dataset.index);
+      chip.classList.add('dragging');
+      e.dataTransfer!.effectAllowed = 'move';
+    });
+
+    wordList.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer!.dropEffect = 'move';
+      const chip = (e.target as HTMLElement).closest<HTMLElement>('.word-chip');
+      if (chip) chip.classList.add('drag-over');
+    });
+
+    wordList.addEventListener('dragleave', (e) => {
+      const chip = (e.target as HTMLElement).closest<HTMLElement>('.word-chip');
+      if (chip) chip.classList.remove('drag-over');
+    });
+
+    wordList.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const chip = (e.target as HTMLElement).closest<HTMLElement>('.word-chip');
+      if (!chip || dragSrcIndex === null) return;
+      const dropIndex = Number(chip.dataset.index);
+      if (dragSrcIndex === dropIndex) return;
+
+      saveFormValues();
+      const [moved] = words.splice(dragSrcIndex, 1);
+      words.splice(dropIndex, 0, moved);
+      dragSrcIndex = null;
+      render();
+    });
+
+    wordList.addEventListener('dragend', () => {
+      dragSrcIndex = null;
+      wordList.querySelectorAll('.dragging, .drag-over').forEach(el => {
+        el.classList.remove('dragging', 'drag-over');
+      });
+    });
+
+    // Cancel buttons
+    groupSelectorEl.querySelector('#form-cancel')!.addEventListener('click', callbacks.onCancel);
+    groupSelectorEl.querySelector('#form-cancel-btn')!.addEventListener('click', callbacks.onCancel);
+
+    // Submit
+    groupSelectorEl.querySelector('#form-submit')!.addEventListener('click', async () => {
+      const nameEl = groupSelectorEl.querySelector<HTMLInputElement>('#group-name')!;
+      const descEl = groupSelectorEl.querySelector<HTMLInputElement>('#group-desc')!;
+      const nameError = groupSelectorEl.querySelector<HTMLDivElement>('#name-error')!;
+      const wordsError = groupSelectorEl.querySelector<HTMLDivElement>('#words-error')!;
+      const submitError = groupSelectorEl.querySelector<HTMLDivElement>('#submit-error')!;
+
+      // Clear errors
+      nameError.classList.add('hidden');
+      wordsError.classList.add('hidden');
+      submitError.classList.add('hidden');
+
+      const name = nameEl.value.trim();
+      const description = descEl.value.trim();
+
+      // Client-side validation
+      let valid = true;
+      if (!name) {
+        nameError.textContent = 'Name ist erforderlich';
+        nameError.classList.remove('hidden');
+        valid = false;
+      }
+      if (words.length < 24) {
+        wordsError.textContent = `Mindestens 24 Wörter erforderlich (aktuell: ${words.length})`;
+        wordsError.classList.remove('hidden');
+        valid = false;
+      }
+      if (!valid) return;
+
+      submitting = true;
+      cachedName = name;
+      cachedDesc = description;
+      render();
+
+      try {
+        await callbacks.onSubmit({ name, description, words: [...words] });
+      } catch (err) {
+        submitting = false;
+        render();
+        const submitErr = groupSelectorEl.querySelector<HTMLDivElement>('#submit-error')!;
+        submitErr.textContent = err instanceof Error ? err.message : 'Unbekannter Fehler';
+        submitErr.classList.remove('hidden');
+      }
+    });
+  }
+
+  function updateWordCount(): void {
+    const countEl = groupSelectorEl.querySelector<HTMLDivElement>('#word-count');
+    if (!countEl) return;
+    countEl.className = `word-count ${words.length < 24 ? 'warning' : ''}`;
+    countEl.textContent = `${words.length} Wörter — ${words.length < 24 ? `noch ${24 - words.length} benötigt (min. 24)` : 'Minimum erreicht ✓'}`;
+  }
+
+  render();
+}
+
 function escapeHtml(text: string): string {
   const div = document.createElement('div');
   div.textContent = text;

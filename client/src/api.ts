@@ -31,6 +31,29 @@ export async function fetchBoard(groupId: string): Promise<BoardResponse> {
   return res.json();
 }
 
+export interface CreateGroupRequest {
+  name: string;
+  description: string;
+  words: string[];
+}
+
+export interface ApiError {
+  error: string;
+}
+
+export async function createGroup(data: CreateGroupRequest): Promise<GroupSummary> {
+  const res = await fetch(`${BASE_URL}/groups`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` })) as ApiError;
+    throw new Error(body.error || `Failed to create group: ${res.status}`);
+  }
+  return res.json();
+}
+
 export async function deleteGroup(groupId: string): Promise<void> {
   const res = await fetch(`${BASE_URL}/groups/${encodeURIComponent(groupId)}`, {
     method: 'DELETE',
