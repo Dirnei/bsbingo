@@ -67,15 +67,15 @@ Add full CRUD capabilities for word groups so anyone (anonymous, no auth require
 **Description:** As a user, I want an intuitive word list editor so I can build my buzzword collection easily.
 
 **Acceptance Criteria:**
-- [ ] Text input to add new words (Enter key or "Add" button)
-- [ ] Each word shown as a removable chip/tag or list item
-- [ ] Remove button (X) on each word
-- [ ] Drag-and-drop reordering of words
-- [ ] Word count displayed (e.g., "32 words — minimum 24")
-- [ ] Visual warning when below 24 words
-- [ ] Duplicate word detection (warn, don't block)
-- [ ] Reusable component (used in both create and edit pages)
-- [ ] Typecheck passes
+- [x] Text input to add new words (Enter key or "Add" button)
+- [x] Each word shown as a removable chip/tag or list item
+- [x] Remove button (X) on each word
+- [x] Drag-and-drop reordering of words
+- [x] Word count displayed (e.g., "32 words — minimum 24")
+- [x] Visual warning when below 24 words
+- [x] Duplicate word detection (warn, don't block)
+- [x] Reusable component (used in both create and edit pages)
+- [x] Typecheck passes
 
 ### US-006: Group edit page
 **Description:** As a user, I want to edit an existing word group to update its name, description, or words.
