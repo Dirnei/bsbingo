@@ -41,12 +41,12 @@ The existing prototype is a fully working 5x5 bingo board with shuffle, mark, bi
 **Description:** As a developer, I need a GroupActor that manages word groups via Akka.NET messages so CRUD operations go through the actor system.
 
 **Acceptance Criteria:**
-- [ ] GroupActor registered via Servus.Akka DI integration
-- [ ] Handles `GetAllGroups` message — returns list of all groups
-- [ ] Handles `GetGroupById` message — returns a single group with its words
-- [ ] GroupActor reads from MongoDB
-- [ ] Message types defined in `Messages/` folder
-- [ ] Typecheck passes
+- [x] GroupActor registered via Servus.Akka DI integration
+- [x] Handles `GetAllGroups` message — returns list of all groups
+- [x] Handles `GetGroupById` message — returns a single group with its words
+- [x] GroupActor reads from MongoDB
+- [x] Message types defined in `Messages/` folder
+- [x] Typecheck passes
 
 ### Task-004: Implement GameActor
 **Description:** As a developer, I need a GameActor that generates a randomized 5x5 board from a group's word pool so each game is unique.
