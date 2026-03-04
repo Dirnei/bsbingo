@@ -41,14 +41,14 @@ Add full CRUD capabilities for word groups so anyone (anonymous, no auth require
 **Description:** As a user, I want to see all available word groups in a list so I can browse, play, edit, or delete them.
 
 **Acceptance Criteria:**
-- [ ] Page at `/groups` shows all groups
-- [ ] Each group card shows name, description, and word count
-- [ ] "Play" button navigates to game with that group
-- [ ] "Edit" button navigates to edit page
-- [ ] "Delete" button with confirmation dialog before deleting
-- [ ] "Create New Group" button visible and prominent
-- [ ] Matches dark industrial aesthetic
-- [ ] Typecheck passes
+- [x] Page at `/groups` shows all groups
+- [x] Each group card shows name, description, and word count
+- [x] "Play" button navigates to game with that group
+- [x] "Edit" button navigates to edit page
+- [x] "Delete" button with confirmation dialog before deleting
+- [x] "Create New Group" button visible and prominent
+- [x] Matches dark industrial aesthetic
+- [x] Typecheck passes
 
 ### US-004: Group create page
 **Description:** As a user, I want to create a new word group by entering a name, description, and list of words.

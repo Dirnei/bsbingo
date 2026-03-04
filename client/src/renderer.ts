@@ -159,6 +159,67 @@ export interface GroupDisplayInfo {
   wordCount: number;
 }
 
+export function showGroupList(
+  groups: GroupDisplayInfo[],
+  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void },
+): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+
+  if (groups.length === 0) {
+    groupSelectorEl.innerHTML = `
+      <div class="group-list-header">
+        <div class="group-selector-title">Wortgruppen</div>
+        <button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>
+      </div>
+      <div class="group-selector-status">Keine Wortgruppen gefunden.</div>
+    `;
+    groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')!.addEventListener('click', callbacks.onCreate);
+    return;
+  }
+
+  groupSelectorEl.innerHTML = `
+    <div class="group-list-header">
+      <div class="group-selector-title">Wortgruppen</div>
+      <button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>
+    </div>
+    <div class="group-cards">
+      ${groups.map(g => `
+        <div class="group-card" data-group-id="${escapeHtml(g.id)}">
+          <div class="group-card-name">${escapeHtml(g.name)}</div>
+          <div class="group-card-desc">${escapeHtml(g.description || 'Keine Beschreibung')}</div>
+          <div class="group-card-count">${g.wordCount} Wörter</div>
+          <div class="group-card-actions">
+            <button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>
+            <button class="group-action-btn group-action-edit" data-action="edit">✎ Bearbeiten</button>
+            <button class="group-action-btn group-action-delete" data-action="delete">✕ Löschen</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')!.addEventListener('click', callbacks.onCreate);
+
+  groupSelectorEl.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
+    if (!btn) return;
+    const card = btn.closest<HTMLElement>('.group-card');
+    if (!card) return;
+    const groupId = card.dataset.groupId;
+    if (!groupId) return;
+
+    const action = btn.dataset.action;
+    if (action === 'play') callbacks.onPlay(groupId);
+    else if (action === 'edit') callbacks.onEdit(groupId);
+    else if (action === 'delete') {
+      const name = card.querySelector('.group-card-name')?.textContent ?? '';
+      callbacks.onDelete(groupId, name);
+    }
+  });
+}
+
+/** @deprecated Use showGroupList instead — kept for game flow compatibility */
 export function showGroupSelector(groups: GroupDisplayInfo[]): void {
   groupSelectorEl.classList.remove('hidden');
   gameViewEl.classList.add('hidden');
@@ -182,6 +243,57 @@ export function showGroupSelector(groups: GroupDisplayInfo[]): void {
       `).join('')}
     </div>
   `;
+}
+
+export function showDeleteConfirmDialog(
+  groupName: string,
+  onConfirm: () => void,
+  onCancel: () => void,
+): void {
+  const overlay = document.createElement('div');
+  overlay.className = 'dialog-overlay';
+  overlay.innerHTML = `
+    <div class="dialog">
+      <div class="dialog-title">Gruppe löschen</div>
+      <div class="dialog-message">
+        Bist du sicher, dass du <strong>${escapeHtml(groupName)}</strong> löschen möchtest?<br>
+        Dies kann nicht rückgängig gemacht werden.
+      </div>
+      <div class="dialog-actions">
+        <button class="dialog-btn-cancel" id="dialog-cancel">Abbrechen</button>
+        <button class="dialog-btn-confirm" id="dialog-confirm">Löschen</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const cleanup = () => {
+    overlay.remove();
+  };
+
+  overlay.querySelector('#dialog-cancel')!.addEventListener('click', () => {
+    cleanup();
+    onCancel();
+  });
+
+  overlay.querySelector('#dialog-confirm')!.addEventListener('click', () => {
+    cleanup();
+    onConfirm();
+  });
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      cleanup();
+      onCancel();
+    }
+  });
+}
+
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 export function showGroupSelectorLoading(): void {

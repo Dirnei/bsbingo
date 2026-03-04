@@ -359,6 +359,150 @@ button.primary:hover {
   text-transform: uppercase;
 }
 
+/* Group List Header */
+.group-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto 20px;
+}
+
+.group-list-header .group-selector-title {
+  margin-bottom: 0;
+}
+
+.group-create-btn {
+  font-size: 11px;
+  padding: 8px 16px;
+}
+
+/* Group Card Actions */
+.group-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.group-action-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex: 1;
+}
+
+.group-action-play:hover {
+  border-color: var(--win);
+  color: var(--win);
+}
+
+.group-action-edit:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.group-action-delete:hover {
+  border-color: #ff4444;
+  color: #ff4444;
+}
+
+/* Delete Confirmation Dialog */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dialog {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 28px;
+  max-width: 420px;
+  width: 90%;
+}
+
+.dialog-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 2px;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.dialog-message {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.dialog-message strong {
+  color: var(--text);
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.dialog-btn-cancel {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 10px 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.dialog-btn-cancel:hover {
+  border-color: var(--text-dim);
+  color: var(--text);
+}
+
+.dialog-btn-confirm {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 10px 20px;
+  border: 1px solid #ff4444;
+  background: transparent;
+  color: #ff4444;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.dialog-btn-confirm:hover {
+  background: #ff4444;
+  color: #000;
+}
+
 footer {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;

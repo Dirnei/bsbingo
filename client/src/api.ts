@@ -30,3 +30,13 @@ export async function fetchBoard(groupId: string): Promise<BoardResponse> {
   if (!res.ok) throw new Error(`Failed to fetch board: ${res.status}`);
   return res.json();
 }
+
+export async function deleteGroup(groupId: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/groups/${encodeURIComponent(groupId)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    if (res.status === 404) throw new Error('Gruppe nicht gefunden');
+    throw new Error(`Failed to delete group: ${res.status}`);
+  }
+}
