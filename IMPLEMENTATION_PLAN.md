@@ -71,13 +71,13 @@ The existing prototype is a fully working 5x5 bingo board with shuffle, mark, bi
 **Description:** As a frontend developer, I need API endpoints to list groups, get group details, and generate new game boards.
 
 **Acceptance Criteria:**
-- [ ] `GET /api/groups` — returns list of groups (id, name, description, word count)
-- [ ] `GET /api/groups/{id}` — returns group details including all words
-- [ ] `POST /api/game/new?groupId={id}` — returns a randomized 25-cell board
-- [ ] Endpoints use minimal API style (not controllers)
-- [ ] Endpoints route through the actor system (GroupActor / GameActor)
-- [ ] Returns proper HTTP status codes (200, 404)
-- [ ] Typecheck passes
+- [x] `GET /api/groups` — returns list of groups (id, name, description, word count)
+- [x] `GET /api/groups/{id}` — returns group details including all words
+- [x] `POST /api/game/new?groupId={id}` — returns a randomized 25-cell board
+- [x] Endpoints use minimal API style (not controllers)
+- [x] Endpoints route through the actor system (GroupActor / GameActor)
+- [x] Returns proper HTTP status codes (200, 404)
+- [x] Typecheck passes
 
 ### Task-007: Extract frontend into Vite + TypeScript
 **Description:** As a developer, I need the frontend extracted from the single HTML file into a proper Vite + TypeScript project while preserving the existing look and feel.
