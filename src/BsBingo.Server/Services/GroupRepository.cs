@@ -29,6 +29,7 @@ public sealed class GroupRepository
 
     public async Task InsertAsync(Group group)
     {
+        group.Validate();
         await _groups.InsertOneAsync(group);
     }
 }

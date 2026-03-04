@@ -32,10 +32,10 @@ The existing prototype is a fully working 5x5 bingo board with shuffle, mark, bi
 **Description:** As a developer, I need a Group document model stored in MongoDB so word groups can be persisted and retrieved.
 
 **Acceptance Criteria:**
-- [ ] Group document model with fields: `_id`, `name`, `description`, `words[]`, `visibility` ("public"), `createdBy` (nullable), `createdAt`, `updatedAt`
-- [ ] MongoDB collection `groups` is created automatically
-- [ ] Group requires `name` and at least 24 words
-- [ ] Typecheck passes
+- [x] Group document model with fields: `_id`, `name`, `description`, `words[]`, `visibility` ("public"), `createdBy` (nullable), `createdAt`, `updatedAt`
+- [x] MongoDB collection `groups` is created automatically
+- [x] Group requires `name` and at least 24 words
+- [x] Typecheck passes
 
 ### Task-003: Implement GroupActor
 **Description:** As a developer, I need a GroupActor that manages word groups via Akka.NET messages so CRUD operations go through the actor system.
