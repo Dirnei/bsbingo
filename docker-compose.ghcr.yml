@@ -1,0 +1,44 @@
+services:
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: mongosh --eval "db.adminCommand('ping')" --quiet
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  server:
+    image: ghcr.io/dirnei/bsbingo-server:latest
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      MongoDB__ConnectionString: mongodb://root:example@mongodb:27017/?authSource=admin
+      MongoDB__Database: bsbingo
+      FrontendUrl: http://localhost:8080
+      # OAuth (optional – leave empty to disable login)
+      # Auth__GitHub__ClientId: ""
+      # Auth__GitHub__ClientSecret: ""
+      # Auth__Google__ClientId: ""
+      # Auth__Google__ClientSecret: ""
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  client:
+    image: ghcr.io/dirnei/bsbingo-client:latest
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - server
+
+volumes:
+  mongo-data:

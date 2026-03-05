@@ -1,101 +1,73 @@
 # Bullshit Bingo
 
-A full-stack Bullshit Bingo web app with a C#/Akka.NET backend, MongoDB persistence, and a Vite + TypeScript frontend.
+A web-based Bullshit Bingo app — create custom word groups, share them with friends, and play together in real time.
 
-## Prerequisites
+## Features
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- [Node.js 20+](https://nodejs.org/)
-- [Docker](https://www.docker.com/) (for MongoDB or full-stack deployment)
+- **Custom word groups** — create and manage your own bingo word lists
+- **Shareable boards** — invite others to play with your word groups via link
+- **Public & private groups** — control who can see and use your lists
+- **OAuth login** — sign in with GitHub or Google
+- **Gravatar support** — profile avatars pulled from your email
+- **Responsive UI** — works on desktop and mobile
 
-## Quick Start (Docker Compose)
+## Self-hosting with Docker Compose
 
-Runs the backend, frontend, and MongoDB together:
+The easiest way to run Bullshit Bingo is with the pre-built images from GitHub Container Registry.
 
-```bash
-docker compose up --build
-```
-
-The app is available at **http://localhost:5000**.
-
-## Local Development
-
-### 1. Start MongoDB
+**1. Download the compose file**
 
 ```bash
-docker compose up mongodb -d
+curl -O https://raw.githubusercontent.com/Dirnei/bsbingo/main/docker-compose.ghcr.yml
 ```
 
-This starts MongoDB on `localhost:27017`.
-
-### 2. Start the Backend
+**2. Start the stack**
 
 ```bash
-cd src/BsBingo.Server
-dotnet run
+docker compose -f docker-compose.ghcr.yml up -d
 ```
 
-The API runs at **http://localhost:5204**.
+**3. Open the app**
 
-### 3. Start the Frontend
+Go to **http://localhost:8080** and start playing.
+
+### Configuration
+
+All settings are configured via environment variables in `docker-compose.ghcr.yml`.
+
+| Variable | Description | Default |
+|---|---|---|
+| `MongoDB__ConnectionString` | MongoDB connection string | `mongodb://root:example@mongodb:27017/?authSource=admin` |
+| `MongoDB__Database` | Database name | `bsbingo` |
+| `FrontendUrl` | Public URL of the frontend (for CORS) | `http://localhost:8080` |
+
+#### OAuth (optional)
+
+To enable GitHub / Google login, uncomment and fill in the OAuth variables in the compose file:
+
+| Variable | Description |
+|---|---|
+| `Auth__GitHub__ClientId` | GitHub OAuth App client ID |
+| `Auth__GitHub__ClientSecret` | GitHub OAuth App client secret |
+| `Auth__Google__ClientId` | Google OAuth client ID |
+| `Auth__Google__ClientSecret` | Google OAuth client secret |
+
+### Updating
 
 ```bash
-cd client
-npm install
-npm run dev
+docker compose -f docker-compose.ghcr.yml pull
+docker compose -f docker-compose.ghcr.yml up -d
 ```
 
-Vite dev server starts at **http://localhost:5173** (proxies API calls to the backend).
+## Contributing
 
-## Project Structure
-
-```
-bsbingo/
-├── src/BsBingo.Server/     # C# ASP.NET Core + Akka.NET backend
-│   ├── Actors/             # Akka.NET actors (GroupActor, GameActor)
-│   ├── Endpoints/          # Minimal API routes
-│   ├── Messages/           # Akka message types
-│   ├── Models/             # MongoDB document models
-│   └── Services/           # MongoDB services
-├── client/                 # Vite + TypeScript frontend
-│   └── src/
-├── tasks/                  # PRD files per phase
-├── docker-compose.yml
-└── bullshit-bingo.html     # Original prototype (design reference)
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and project structure.
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
 | Frontend | Vite + TypeScript |
-| Backend | C# / ASP.NET Core (.NET 10) |
-| Actor System | Akka.NET + Akka.Hosting + Servus.Akka |
+| Backend | C# / ASP.NET Core (.NET 10) + Akka.NET |
 | Database | MongoDB 7 |
-| Containerization | Docker Compose |
-
-## Configuration
-
-The backend reads MongoDB settings from `appsettings.json` or environment variables:
-
-| Setting | Default | Env Variable |
-|---|---|---|
-| Connection String | `mongodb://root:example@localhost:27017` | `MongoDB__ConnectionString` |
-| Database Name | `bsbingo` | `MongoDB__Database` |
-
-## RALPH (Autonomous Agent Loop)
-
-This project includes `ralph.sh` for autonomous development iterations:
-
-```bash
-# Run 5 iterations (default)
-./ralph.sh
-
-# Run 10 iterations with a specific model
-./ralph.sh --model claude-opus-4-6 10
-
-# With adversarial review every 3 iterations
-./ralph.sh --review-interval 3
-```
-
-See `IMPLEMENTATION_PLAN.md` for the task breakdown RALPH works from.
+| Containerization | Docker |
