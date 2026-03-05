@@ -196,10 +196,10 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As a user, I want public groups to only be editable by their creator so community groups stay consistent.
 
 **Acceptance Criteria:**
-- [ ] Edit and delete buttons only shown for groups where `createdBy` matches the current user
-- [ ] Backend rejects edit/delete requests from non-owners (return 403)
-- [ ] Seed data groups (no owner) cannot be edited or deleted by anyone
-- [ ] Typecheck passes
+- [x] Edit and delete buttons only shown for groups where `createdBy` matches the current user
+- [x] Backend rejects edit/delete requests from non-owners (return 403)
+- [x] Seed data groups (no owner) cannot be edited or deleted by anyone
+- [x] Typecheck passes
 
 ### US-014: Lock board after bingo
 **Description:** As a player, once I hit a bingo the board should lock so no more cells can be toggled until I start a new game or reset.

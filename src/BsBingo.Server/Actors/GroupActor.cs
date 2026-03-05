@@ -64,7 +64,7 @@ public sealed class GroupActor : ReceiveActor
                     return;
                 }
 
-                if (existing.CreatedBy is not null && existing.CreatedBy != msg.UserId)
+                if (existing.CreatedBy is null || existing.CreatedBy != msg.UserId)
                 {
                     Sender.Tell(new GroupResult(false, Error: "Forbidden"));
                     return;
@@ -92,7 +92,7 @@ public sealed class GroupActor : ReceiveActor
                 return;
             }
 
-            if (existing.CreatedBy is not null && existing.CreatedBy != msg.UserId)
+            if (existing.CreatedBy is null || existing.CreatedBy != msg.UserId)
             {
                 Sender.Tell(new GroupResult(false, Error: "Forbidden"));
                 return;
