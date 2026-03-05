@@ -765,3 +765,75 @@ footer {
 .back-link:hover {
   color: var(--accent);
 }
+
+/* Login Page */
+.login-page {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px;
+  text-align: center;
+}
+
+.login-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  letter-spacing: 2px;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.login-subtitle {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.login-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  padding: 14px 24px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.18s;
+  text-transform: none;
+}
+
+.login-btn:hover {
+  border-color: var(--accent);
+}
+
+.login-icon {
+  flex-shrink: 0;
+}
+
+.login-btn-github:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.login-btn-google:hover {
+  border-color: #4285F4;
+  color: var(--text);
+}
+
+.login-page .back-link {
+  display: block;
+  text-align: left;
+  margin-bottom: 24px;
+}

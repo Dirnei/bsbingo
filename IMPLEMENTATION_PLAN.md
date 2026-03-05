@@ -72,12 +72,12 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As a user, I want a login page with "Sign in with GitHub" and "Sign in with Google" buttons so I can authenticate quickly.
 
 **Acceptance Criteria:**
-- [ ] Login page with two OAuth buttons (GitHub and Google)
-- [ ] No username/password fields (OAuth only)
-- [ ] Buttons initiate the OAuth redirect flow
-- [ ] After successful login, redirects back to the app
-- [ ] Matches the dark industrial aesthetic
-- [ ] Typecheck passes
+- [x] Login page with two OAuth buttons (GitHub and Google)
+- [x] No username/password fields (OAuth only)
+- [x] Buttons initiate the OAuth redirect flow
+- [x] After successful login, redirects back to the app
+- [x] Matches the dark industrial aesthetic
+- [x] Typecheck passes
 
 ### US-007: User avatar and name in header
 **Description:** As an authenticated user, I want to see my avatar and name in the app header so I know I'm logged in.

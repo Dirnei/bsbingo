@@ -5,10 +5,10 @@ import {
   mountApp, renderBoard, updateCell, showLoading, showError, clearStatus,
   showGroupList, showGroupSelectorLoading, showGroupSelectorError, showGameView,
   showDeleteConfirmDialog, showGroupCreateForm, showGroupEditForm, showToast,
-  showStaticPage,
+  showStaticPage, showLoginPage,
 } from './renderer.ts';
 import type { GroupDisplayInfo } from './renderer.ts';
-import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup } from './api.ts';
+import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
 
 let state: BingoState;
@@ -143,6 +143,35 @@ registerRoutes([
     pattern: '/game/:id',
     handler: (params) => {
       startGame(params.id);
+    },
+  },
+  {
+    pattern: '/login',
+    handler: () => {
+      showLoginPage({
+        onGitHub: () => { window.location.href = getLoginUrl('github'); },
+        onGoogle: () => { window.location.href = getLoginUrl('google'); },
+        onBack: () => navigate('/groups'),
+      });
+    },
+  },
+  {
+    pattern: '/auth/callback',
+    handler: () => {
+      // Extract token from query string (the backend redirects to /#/auth/callback?token=...)
+      const hashPart = window.location.hash.slice(1); // remove #
+      const qIndex = hashPart.indexOf('?');
+      if (qIndex !== -1) {
+        const params = new URLSearchParams(hashPart.slice(qIndex));
+        const token = params.get('token');
+        if (token) {
+          setToken(token);
+          // Clean the URL and redirect to groups
+          navigate('/groups');
+          return;
+        }
+      }
+      navigate('/login');
     },
   },
   {

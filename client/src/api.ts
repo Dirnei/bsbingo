@@ -17,6 +17,54 @@ export interface BoardResponse {
 
 const BASE_URL = '/api';
 
+// --- Auth ---
+
+const TOKEN_KEY = 'bsbingo_token';
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+export function isLoggedIn(): boolean {
+  return getToken() !== null;
+}
+
+export interface UserInfo {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  provider: string;
+}
+
+export async function fetchMe(): Promise<UserInfo | null> {
+  const token = getToken();
+  if (!token) return null;
+  const res = await fetch(`${BASE_URL}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    if (res.status === 401) {
+      clearToken();
+      return null;
+    }
+    return null;
+  }
+  return res.json();
+}
+
+export function getLoginUrl(provider: 'github' | 'google'): string {
+  return `${BASE_URL}/auth/login/${provider}`;
+}
+
 export async function fetchGroups(): Promise<GroupSummary[]> {
   const res = await fetch(`${BASE_URL}/groups`);
   if (!res.ok) throw new Error(`Failed to fetch groups: ${res.status}`);
