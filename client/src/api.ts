@@ -20,6 +20,7 @@ export interface BoardResponse {
 }
 
 const BASE_URL = '/api';
+const BACKEND_ORIGIN = import.meta.env.VITE_BACKEND_ORIGIN || '';
 
 // --- Auth ---
 
@@ -66,7 +67,9 @@ export async function fetchMe(): Promise<UserInfo | null> {
 }
 
 export function getLoginUrl(provider: 'github' | 'google'): string {
-  return `${BASE_URL}/auth/login/${provider}`;
+  // OAuth requires a full redirect chain (backend → GitHub → backend → frontend),
+  // so we must link directly to the backend origin, not through the Vite proxy.
+  return `${BACKEND_ORIGIN}${BASE_URL}/auth/login/${provider}`;
 }
 
 export async function fetchGroups(): Promise<GroupSummary[]> {

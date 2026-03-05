@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using Servus.Akka;
@@ -98,6 +99,11 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost,
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -129,9 +135,12 @@ app.MapGet("/api/auth/login/{provider}", (string provider) =>
 // After OAuth callback, create/find user in DB, issue a JWT, and redirect to the frontend
 app.MapGet("/api/auth/token", async (HttpContext context, IConfiguration config, IRequiredActor<UserActor> userActor) =>
 {
-    var principal = context.User;
-    if (principal.Identity?.IsAuthenticated != true)
+    // Authenticate using the cookie scheme (not the default JWT scheme),
+    // since the OAuth callback stores the result in a cookie.
+    var authResult = await context.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    if (!authResult.Succeeded)
         return Results.Unauthorized();
+    var principal = authResult.Principal;
 
     var provider = principal.Identity.AuthenticationType ?? "";
     var providerId = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
@@ -178,7 +187,14 @@ app.MapGet("/api/auth/token", async (HttpContext context, IConfiguration config,
     var jwt = new JwtSecurityTokenHandler().WriteToken(token);
 
     // Redirect to frontend with token as query parameter
-    return Results.Redirect($"/#/auth/callback?token={jwt}");
+    var frontendUrl = config["FrontendUrl"]?.TrimEnd('/');
+    if (string.IsNullOrEmpty(frontendUrl))
+    {
+        var request = context.Request;
+        frontendUrl = $"{request.Scheme}://{request.Host}";
+    }
+    var redirectUrl = $"{frontendUrl}/#/auth/callback?token={jwt}";
+    return Results.Redirect(redirectUrl);
 });
 
 // GET /api/auth/me — return current user info from JWT

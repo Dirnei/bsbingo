@@ -20,10 +20,11 @@ services:
       context: .
       dockerfile: src/BsBingo.Server/Dockerfile
     ports:
-      - "5000:8080"
+      - "8081:8081"
     environment:
       MongoDB__ConnectionString: mongodb://root:example@mongodb:27017/?authSource=admin
       MongoDB__Database: bsbingo
+      FrontendUrl: http://localhost:8080
     depends_on:
       mongodb:
         condition: service_healthy
