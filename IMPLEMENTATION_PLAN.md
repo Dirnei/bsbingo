@@ -61,12 +61,12 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As a developer, I need authentication middleware so certain API endpoints require a valid JWT.
 
 **Acceptance Criteria:**
-- [ ] Middleware validates JWT on protected endpoints
-- [ ] `GET /api/auth/me` returns current user info (name, email, avatar)
-- [ ] Group create/edit/delete endpoints require authentication
-- [ ] Group list and game endpoints remain publicly accessible
-- [ ] Returns 401 for missing/invalid tokens on protected routes
-- [ ] Typecheck passes
+- [x] Middleware validates JWT on protected endpoints
+- [x] `GET /api/auth/me` returns current user info (name, email, avatar)
+- [x] Group create/edit/delete endpoints require authentication
+- [x] Group list and game endpoints remain publicly accessible
+- [x] Returns 401 for missing/invalid tokens on protected routes
+- [x] Typecheck passes
 
 ### US-006: Login UI with OAuth buttons
 **Description:** As a user, I want a login page with "Sign in with GitHub" and "Sign in with Google" buttons so I can authenticate quickly.

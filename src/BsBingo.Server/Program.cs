@@ -231,7 +231,7 @@ app.MapPost("/api/groups", async (CreateGroupRequest request, IRequiredActor<Gro
         group.Description,
         WordCount = group.Words.Count
     });
-});
+}).RequireAuthorization();
 
 // PUT /api/groups/{id} — update an existing group
 app.MapPut("/api/groups/{id}", async (string id, UpdateGroupRequest request, IRequiredActor<GroupActor> groupActor) =>
@@ -247,7 +247,7 @@ app.MapPut("/api/groups/{id}", async (string id, UpdateGroupRequest request, IRe
     }
 
     return Results.Ok(result.Data);
-});
+}).RequireAuthorization();
 
 // DELETE /api/groups/{id} — delete a group
 app.MapDelete("/api/groups/{id}", async (string id, IRequiredActor<GroupActor> groupActor) =>
@@ -259,7 +259,7 @@ app.MapDelete("/api/groups/{id}", async (string id, IRequiredActor<GroupActor> g
         return Results.NotFound(new { error = result.Error });
 
     return Results.NoContent();
-});
+}).RequireAuthorization();
 
 // POST /api/game/new?groupId={id} — generate a randomized 25-cell board
 app.MapPost("/api/game/new", async (string groupId, IRequiredActor<GameActor> gameActor) =>
