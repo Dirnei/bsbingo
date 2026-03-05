@@ -5,6 +5,7 @@ import {
   mountApp, renderBoard, updateCell, showLoading, showError, clearStatus,
   showGroupList, showGroupSelectorLoading, showGroupSelectorError, showGameView,
   showDeleteConfirmDialog, showGroupCreateForm, showGroupEditForm, showToast,
+  showStaticPage,
 } from './renderer.ts';
 import type { GroupDisplayInfo } from './renderer.ts';
 import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup } from './api.ts';
@@ -142,6 +143,58 @@ registerRoutes([
     pattern: '/game/:id',
     handler: (params) => {
       startGame(params.id);
+    },
+  },
+  {
+    pattern: '/impressum',
+    handler: () => {
+      showStaticPage('Impressum', `
+        <p><strong>Angaben gemäß § 5 TMG</strong></p>
+        <p>
+          Max Mustermann<br>
+          Musterstraße 1<br>
+          12345 Musterstadt
+        </p>
+        <p><strong>Kontakt</strong></p>
+        <p>
+          E-Mail: max@example.com
+        </p>
+        <p><strong>Haftungsausschluss</strong></p>
+        <p>
+          Dieses Projekt ist ein satirisches Spaßprojekt. Die Inhalte wurden mit Sorgfalt erstellt,
+          jedoch wird keine Gewähr für Richtigkeit, Vollständigkeit und Aktualität übernommen.
+        </p>
+      `, () => navigate('/groups'));
+    },
+  },
+  {
+    pattern: '/datenschutz',
+    handler: () => {
+      showStaticPage('Datenschutzerklärung', `
+        <p><strong>1. Datenschutz auf einen Blick</strong></p>
+        <p>
+          Diese Website erhebt und speichert grundsätzlich keine personenbezogenen Daten.
+          Es werden keine Cookies gesetzt und kein Tracking eingesetzt.
+        </p>
+        <p><strong>2. Hosting</strong></p>
+        <p>
+          Die Website wird extern gehostet. Die Serverlogfiles können IP-Adressen,
+          Browsertyp, Betriebssystem, Referrer-URL, Zeitpunkt des Zugriffs und die abgerufene Seite enthalten.
+          Die Erfassung dieser Daten erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO.
+        </p>
+        <p><strong>3. Keine Cookies</strong></p>
+        <p>
+          Diese Website verwendet keine Cookies.
+        </p>
+        <p><strong>4. Keine Analyse-Tools</strong></p>
+        <p>
+          Es werden keine Analyse- oder Tracking-Tools eingesetzt.
+        </p>
+        <p><strong>5. Kontakt</strong></p>
+        <p>
+          Bei Fragen zum Datenschutz wenden Sie sich bitte an die im Impressum genannte Person.
+        </p>
+      `, () => navigate('/groups'));
     },
   },
 ]);

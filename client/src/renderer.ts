@@ -49,6 +49,15 @@ export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): vo
     <footer>
       Dieses Spiel ist rein satirisch und dient der psychischen Selbstverteidigung.<br>
       Alle Buzzwords basieren auf wahren Begebenheiten. Keine Haftung für unkontrolliertes Augenrollen.
+      <div class="footer-links">
+        <a href="https://github.com/Dirnei/bsbingo" target="_blank" rel="noopener noreferrer" class="github-badge">
+          <img src="https://img.shields.io/github/stars/Dirnei/bsbingo?style=social" alt="GitHub">
+        </a>
+        <span class="footer-sep">·</span>
+        <a href="#/impressum">Impressum</a>
+        <span class="footer-sep">·</span>
+        <a href="#/datenschutz">Datenschutzerklärung</a>
+      </div>
     </footer>
   `;
 
@@ -489,4 +498,17 @@ export function showGameView(onBackToGroups: () => void): void {
   const newBtn = btnGroups.cloneNode(true) as HTMLButtonElement;
   btnGroups.parentNode!.replaceChild(newBtn, btnGroups);
   newBtn.addEventListener('click', onBackToGroups);
+}
+
+export function showStaticPage(title: string, html: string, onBack: () => void): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+  groupSelectorEl.innerHTML = `
+    <div class="static-page">
+      <button class="back-link" id="btn-back">← Zurück</button>
+      <h2>${title}</h2>
+      <div class="static-page-content">${html}</div>
+    </div>
+  `;
+  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-back')!.addEventListener('click', onBack);
 }

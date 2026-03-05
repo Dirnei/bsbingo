@@ -694,3 +694,74 @@ footer {
   text-align: center;
   line-height: 1.8;
 }
+
+.footer-links {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.footer-links a {
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.footer-links a:hover {
+  color: var(--accent);
+}
+
+.footer-sep {
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+.github-badge img {
+  vertical-align: middle;
+  height: 16px;
+}
+
+.static-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px;
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.static-page h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+
+.static-page p {
+  margin-bottom: 12px;
+  color: var(--text-dim);
+}
+
+.static-page strong {
+  color: var(--text);
+}
+
+.back-link {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 16px;
+  transition: color 0.15s;
+}
+
+.back-link:hover {
+  color: var(--accent);
+}
