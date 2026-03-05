@@ -1,3 +1,5 @@
+![Bullshit Bingo](docs/header.png)
+
 # Bullshit Bingo
 
 A web-based Bullshit Bingo app — create custom word groups, share them with friends, and play together in real time.
@@ -10,6 +12,8 @@ A web-based Bullshit Bingo app — create custom word groups, share them with fr
 - **OAuth login** — sign in with GitHub or Google
 - **Gravatar support** — profile avatars pulled from your email
 - **Responsive UI** — works on desktop and mobile
+
+![Bullshit Bingo Overview](docs/groups.png)
 
 ## Self-hosting with Docker Compose
 
