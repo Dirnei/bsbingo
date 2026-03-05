@@ -18,6 +18,9 @@ using BsBingo.Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Load optional local settings (gitignored) for secrets like OAuth credentials
+builder.Configuration.AddJsonFile("appsettings.secure.json", optional: true, reloadOnChange: true);
+
 // MongoDB
 var mongoConnectionString = builder.Configuration.GetValue<string>("MongoDB:ConnectionString")
     ?? "mongodb://localhost:27017";
