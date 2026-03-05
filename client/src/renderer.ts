@@ -23,7 +23,7 @@ let groupListAbortController: AbortController | null = null;
 export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): void {
   container.innerHTML = `
     <header>
-      <div class="badge">⚠ DiIT / Komax Group ⚠</div>
+      <div class="badge">⚠ LEBERKAS ORG EDITION ⚠</div>
       <h1>BULLSHIT<br><span>BINGO</span></h1>
       <div class="subtitle">// Smart Factory Edition · Klick auf ein Feld wenn du es hörst</div>
     </header>
