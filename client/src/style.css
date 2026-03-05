@@ -530,6 +530,20 @@ button.primary:hover {
   padding: 8px 16px;
 }
 
+/* Group Section Title */
+.group-section-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  max-width: 720px;
+  width: 100%;
+  margin: 8px auto 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
 /* Group Card Actions */
 .group-card-actions {
   display: flex;

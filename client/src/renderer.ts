@@ -246,33 +246,55 @@ export function showGroupList(
     return;
   }
 
+  const builtinGroups = groups.filter(g => g.createdBy === null);
+  const myGroups = groups.filter(g => g.createdBy !== null && g.visibility === 'private' && g.createdBy === currentUserId);
+  const ownPublicGroups = groups.filter(g => g.createdBy !== null && g.visibility !== 'private' && g.createdBy === currentUserId);
+  const otherGroups = groups.filter(g => g.createdBy !== null && g.createdBy !== currentUserId);
+  const communityGroups = [...ownPublicGroups, ...otherGroups];
+
+  function renderCard(g: GroupDisplayInfo, showOwnerActions: boolean): string {
+    const isOwner = showOwnerActions && !!currentUserId && g.createdBy === currentUserId;
+    return `
+      <div class="group-card" data-group-id="${escapeHtml(g.id)}">
+        <div class="group-card-name">${escapeHtml(g.name)}${g.visibility === 'private' ? ' <span class="visibility-badge visibility-private">Privat</span>' : ''}</div>
+        <div class="group-card-desc">${escapeHtml(g.description || 'Keine Beschreibung')}</div>
+        <div class="group-card-meta">
+          <span>${g.wordCount} Wörter</span>
+          <span>${g.createdByName ? escapeHtml(g.createdByName) : 'Kein Besitzer'}</span>
+        </div>
+        <div class="group-card-actions">
+          <button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>
+          ${isOwner && g.visibility === 'private' ? `<button class="group-action-btn group-action-share" data-action="share">🔗 Teilen</button>` : ''}
+          ${isOwner ? `<button class="group-action-btn group-action-edit" data-action="edit">✎ Bearbeiten</button>` : ''}
+          ${isOwner ? `<button class="group-action-btn group-action-delete" data-action="delete">✕ Löschen</button>` : ''}
+        </div>
+        ${isOwner && g.sharedWith && g.sharedWith.length > 0 ? `<div class="group-card-shared">${g.sharedWith.length} Nutzer haben Zugriff</div>` : ''}
+      </div>
+    `;
+  }
+
   groupSelectorEl.innerHTML = `
     <div class="group-list-header">
       <div class="group-selector-title">Wortgruppen</div>
       <button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>
     </div>
-    <div class="group-cards">
-      ${groups.map(g => {
-        const isOwner = !!currentUserId && g.createdBy === currentUserId;
-        return `
-        <div class="group-card" data-group-id="${escapeHtml(g.id)}">
-          <div class="group-card-name">${escapeHtml(g.name)}${g.visibility === 'private' ? ' <span class="visibility-badge visibility-private">Privat</span>' : ''}</div>
-          <div class="group-card-desc">${escapeHtml(g.description || 'Keine Beschreibung')}</div>
-          <div class="group-card-meta">
-            <span>${g.wordCount} Wörter</span>
-            <span>${g.createdByName ? escapeHtml(g.createdByName) : 'Kein Besitzer'}</span>
-          </div>
-          <div class="group-card-actions">
-            <button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>
-            ${isOwner && g.visibility === 'private' ? `<button class="group-action-btn group-action-share" data-action="share">🔗 Teilen</button>` : ''}
-            ${isOwner ? `<button class="group-action-btn group-action-edit" data-action="edit">✎ Bearbeiten</button>` : ''}
-            ${isOwner ? `<button class="group-action-btn group-action-delete" data-action="delete">✕ Löschen</button>` : ''}
-          </div>
-          ${isOwner && g.sharedWith && g.sharedWith.length > 0 ? `<div class="group-card-shared">${g.sharedWith.length} Nutzer haben Zugriff</div>` : ''}
-        </div>
-      `;
-      }).join('')}
-    </div>
+    ${builtinGroups.length > 0 ? `
+      <div class="group-cards">
+        ${builtinGroups.map(g => renderCard(g, false)).join('')}
+      </div>
+    ` : ''}
+    ${myGroups.length > 0 ? `
+      <div class="group-section-title">Meine Gruppen</div>
+      <div class="group-cards">
+        ${myGroups.map(g => renderCard(g, true)).join('')}
+      </div>
+    ` : ''}
+    ${communityGroups.length > 0 ? `
+      <div class="group-section-title">Community</div>
+      <div class="group-cards">
+        ${communityGroups.map(g => renderCard(g, true)).join('')}
+      </div>
+    ` : ''}
   `;
 
   // Abort previous listener to prevent accumulation
