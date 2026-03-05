@@ -5,10 +5,10 @@ import {
   mountApp, renderBoard, updateCell, showLoading, showError, clearStatus,
   showGroupList, showGroupSelectorLoading, showGroupSelectorError, showGameView,
   showDeleteConfirmDialog, showGroupCreateForm, showGroupEditForm, showToast,
-  showStaticPage, showLoginPage, updateHeaderAuth,
+  showStaticPage, showLoginPage, updateHeaderAuth, showInvitePage, showShareDialog,
 } from './renderer.ts';
 import type { GroupDisplayInfo } from './renderer.ts';
-import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe } from './api.ts';
+import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn } from './api.ts';
 import type { UserInfo } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
 
@@ -69,6 +69,18 @@ function showGroupListWithActions(): void {
     },
     onCreate: () => {
       navigate('/groups/new');
+    },
+    onShare: async (id) => {
+      try {
+        const inviteToken = await generateInviteLink(id);
+        const inviteUrl = `${window.location.origin}/#/invite/${inviteToken}`;
+        showShareDialog(inviteUrl, () => {
+          // Refresh to update invite token in cached data
+          loadGroups();
+        });
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen des Einladungslinks');
+      }
     },
   }, currentUser?.id);
 }
@@ -164,6 +176,43 @@ registerRoutes([
     pattern: '/game/:id',
     handler: (params) => {
       startGame(params.id);
+    },
+  },
+  {
+    pattern: '/invite/:token',
+    handler: async (params) => {
+      showGroupSelectorLoading();
+      try {
+        const info = await fetchInviteInfo(params.token);
+        showInvitePage(info, {
+          onAccept: async () => {
+            if (!isLoggedIn()) {
+              navigate('/login');
+              return;
+            }
+            try {
+              const result = await acceptInvite(params.token);
+              showToast(`Du hast jetzt Zugriff auf „${result.name}"`);
+              navigate('/groups');
+            } catch (err) {
+              showGroupSelectorError(err instanceof Error ? err.message : 'Fehler beim Annehmen der Einladung');
+            }
+          },
+          onBack: () => navigate('/groups'),
+        }, isLoggedIn());
+      } catch (err) {
+        showGroupSelectorError(err instanceof Error ? err.message : 'Ungültiger Einladungslink');
+      }
+    },
+  },
+  {
+    pattern: '/my-groups',
+    handler: async () => {
+      if (!isLoggedIn()) {
+        navigate('/login');
+        return;
+      }
+      await loadGroups();
     },
   },
   {

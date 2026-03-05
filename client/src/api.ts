@@ -5,6 +5,8 @@ export interface GroupSummary {
   wordCount: number;
   createdBy: string | null;
   visibility: string;
+  inviteToken: string | null;
+  sharedWith: string[] | null;
 }
 
 export interface BoardCell {
@@ -157,4 +159,61 @@ export async function deleteGroup(groupId: string): Promise<void> {
     if (res.status === 404) throw new Error('Gruppe nicht gefunden');
     throw new Error(`Failed to delete group: ${res.status}`);
   }
+}
+
+export interface InviteInfo {
+  id: string;
+  name: string;
+  description: string | null;
+  wordCount: number;
+}
+
+export async function generateInviteLink(groupId: string): Promise<string> {
+  const token = getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${BASE_URL}/groups/${encodeURIComponent(groupId)}/invite`, {
+    method: 'POST',
+    headers,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` })) as ApiError;
+    throw new Error(body.error || `Failed to generate invite: ${res.status}`);
+  }
+  const data = await res.json();
+  return data.inviteToken;
+}
+
+export async function fetchInviteInfo(inviteToken: string): Promise<InviteInfo> {
+  const res = await fetch(`${BASE_URL}/invite/${encodeURIComponent(inviteToken)}`);
+  if (!res.ok) {
+    if (res.status === 404) throw new Error('Ungültiger Einladungslink');
+    throw new Error(`Failed to fetch invite info: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function acceptInvite(inviteToken: string): Promise<{ id: string; name: string }> {
+  const token = getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${BASE_URL}/invite/${encodeURIComponent(inviteToken)}/accept`, {
+    method: 'POST',
+    headers,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` })) as ApiError;
+    throw new Error(body.error || `Failed to accept invite: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchSharedUsers(groupId: string): Promise<string[]> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${BASE_URL}/groups/${encodeURIComponent(groupId)}/shared`, { headers });
+  if (!res.ok) throw new Error(`Failed to fetch shared users: ${res.status}`);
+  const data = await res.json();
+  return data.sharedWith;
 }

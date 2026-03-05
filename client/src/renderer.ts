@@ -225,11 +225,13 @@ export interface GroupDisplayInfo {
   wordCount: number;
   createdBy: string | null;
   visibility: string;
+  inviteToken: string | null;
+  sharedWith: string[] | null;
 }
 
 export function showGroupList(
   groups: GroupDisplayInfo[],
-  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void },
+  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void; onShare?: (id: string) => void },
   currentUserId?: string | null,
 ): void {
   groupSelectorEl.classList.remove('hidden');
@@ -262,9 +264,11 @@ export function showGroupList(
           <div class="group-card-count">${g.wordCount} Wörter</div>
           <div class="group-card-actions">
             <button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>
+            ${isOwner && g.visibility === 'private' ? `<button class="group-action-btn group-action-share" data-action="share">🔗 Teilen</button>` : ''}
             ${isOwner ? `<button class="group-action-btn group-action-edit" data-action="edit">✎ Bearbeiten</button>` : ''}
             ${isOwner ? `<button class="group-action-btn group-action-delete" data-action="delete">✕ Löschen</button>` : ''}
           </div>
+          ${isOwner && g.sharedWith && g.sharedWith.length > 0 ? `<div class="group-card-shared">${g.sharedWith.length} Nutzer haben Zugriff</div>` : ''}
         </div>
       `;
       }).join('')}
@@ -288,6 +292,7 @@ export function showGroupList(
 
     const action = btn.dataset.action;
     if (action === 'play') callbacks.onPlay(groupId);
+    else if (action === 'share' && callbacks.onShare) callbacks.onShare(groupId);
     else if (action === 'edit') callbacks.onEdit(groupId);
     else if (action === 'delete') {
       const name = card.querySelector('.group-card-name')?.textContent ?? '';
@@ -610,6 +615,69 @@ export function showLoginPage(callbacks: { onGitHub: () => void; onGoogle: () =>
   groupSelectorEl.querySelector<HTMLButtonElement>('#btn-back')!.addEventListener('click', callbacks.onBack);
   groupSelectorEl.querySelector<HTMLButtonElement>('#btn-github')!.addEventListener('click', callbacks.onGitHub);
   groupSelectorEl.querySelector<HTMLButtonElement>('#btn-google')!.addEventListener('click', callbacks.onGoogle);
+}
+
+export function showInvitePage(
+  info: { name: string; description: string | null; wordCount: number },
+  callbacks: { onAccept: () => void; onBack: () => void },
+  isLoggedIn: boolean,
+): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+  groupSelectorEl.innerHTML = `
+    <div class="invite-page">
+      <button class="back-link" id="btn-back">← Zurück</button>
+      <div class="invite-title">Einladung</div>
+      <div class="invite-info">
+        <div class="invite-group-name">${escapeHtml(info.name)}</div>
+        ${info.description ? `<div class="invite-group-desc">${escapeHtml(info.description)}</div>` : ''}
+        <div class="invite-group-count">${info.wordCount} Wörter</div>
+      </div>
+      ${isLoggedIn
+        ? `<button class="primary invite-accept-btn" id="btn-accept">Einladung annehmen</button>`
+        : `<div class="invite-login-hint">Bitte melde dich an, um die Einladung anzunehmen.</div>`
+      }
+    </div>
+  `;
+  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-back')!.addEventListener('click', callbacks.onBack);
+  const acceptBtn = groupSelectorEl.querySelector<HTMLButtonElement>('#btn-accept');
+  if (acceptBtn) acceptBtn.addEventListener('click', callbacks.onAccept);
+}
+
+export function showShareDialog(inviteUrl: string, onClose: () => void): void {
+  const overlay = document.createElement('div');
+  overlay.className = 'dialog-overlay';
+  overlay.innerHTML = `
+    <div class="dialog">
+      <div class="dialog-title">Einladungslink</div>
+      <div class="dialog-message">
+        Teile diesen Link, um anderen Zugriff auf deine private Gruppe zu geben:
+      </div>
+      <div class="invite-url-container">
+        <input type="text" class="invite-url-input" id="invite-url" readonly value="${escapeHtml(inviteUrl)}" />
+        <button class="invite-copy-btn" id="invite-copy">Kopieren</button>
+      </div>
+      <div class="invite-copied hidden" id="invite-copied">Link kopiert!</div>
+      <div class="dialog-actions">
+        <button class="dialog-btn-cancel" id="dialog-close">Schließen</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const cleanup = () => { overlay.remove(); };
+
+  overlay.querySelector<HTMLButtonElement>('#invite-copy')!.addEventListener('click', () => {
+    const input = overlay.querySelector<HTMLInputElement>('#invite-url')!;
+    navigator.clipboard.writeText(input.value).then(() => {
+      overlay.querySelector('#invite-copied')!.classList.remove('hidden');
+      setTimeout(() => overlay.querySelector('#invite-copied')?.classList.add('hidden'), 2000);
+    });
+  });
+
+  overlay.querySelector('#dialog-close')!.addEventListener('click', () => { cleanup(); onClose(); });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) { cleanup(); onClose(); } });
 }
 
 export function showStaticPage(title: string, html: string, onBack: () => void): void {

@@ -208,7 +208,9 @@ app.MapGet("/api/groups", async (ClaimsPrincipal user, IRequiredActor<GroupActor
         g.Description,
         WordCount = g.Words.Count,
         g.CreatedBy,
-        g.Visibility
+        g.Visibility,
+        InviteToken = (userId is not null && g.CreatedBy == userId) ? g.InviteToken : null,
+        SharedWith = (userId is not null && g.CreatedBy == userId) ? g.SharedWith : null
     }));
 });
 
@@ -279,6 +281,70 @@ app.MapDelete("/api/groups/{id}", async (string id, ClaimsPrincipal user, IRequi
     }
 
     return Results.NoContent();
+}).RequireAuthorization();
+
+// POST /api/groups/{id}/invite — generate an invite link for a private group (owner only)
+app.MapPost("/api/groups/{id}/invite", async (string id, ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
+{
+    var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+    var result = await groupActor.ActorRef.Ask<GroupResult>(
+        new GenerateInviteLink(id, userId!), askTimeout);
+
+    if (!result.Success)
+    {
+        return result.Error switch
+        {
+            "Group not found" => Results.NotFound(new { error = result.Error }),
+            "Forbidden" => Results.StatusCode(403),
+            _ => Results.BadRequest(new { error = result.Error })
+        };
+    }
+
+    return Results.Ok(new { inviteToken = (string)result.Data! });
+}).RequireAuthorization();
+
+// GET /api/invite/{token} — validate an invite token and return group info
+app.MapGet("/api/invite/{token}", async (string token, IRequiredActor<GroupActor> groupActor) =>
+{
+    var group = await groupActor.ActorRef.Ask<Group?>(new GetGroupByInviteToken(token), askTimeout);
+    if (group is null)
+        return Results.NotFound(new { error = "Invalid invite link" });
+
+    return Results.Ok(new { group.Id, group.Name, group.Description, WordCount = group.Words.Count });
+});
+
+// POST /api/invite/{token}/accept — accept an invite and join the group
+app.MapPost("/api/invite/{token}/accept", async (string token, ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
+{
+    var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+    var result = await groupActor.ActorRef.Ask<GroupResult>(
+        new AcceptInvite(token, userId!), askTimeout);
+
+    if (!result.Success)
+        return Results.NotFound(new { error = result.Error });
+
+    var group = (Group)result.Data!;
+    return Results.Ok(new { group.Id, group.Name });
+}).RequireAuthorization();
+
+// GET /api/groups/{id}/shared — list users who have access to a group (owner only)
+app.MapGet("/api/groups/{id}/shared", async (string id, ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
+{
+    var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+    var result = await groupActor.ActorRef.Ask<GroupResult>(
+        new GetSharedUsers(id, userId!), askTimeout);
+
+    if (!result.Success)
+    {
+        return result.Error switch
+        {
+            "Group not found" => Results.NotFound(new { error = result.Error }),
+            "Forbidden" => Results.StatusCode(403),
+            _ => Results.BadRequest(new { error = result.Error })
+        };
+    }
+
+    return Results.Ok(new { sharedWith = (List<string>)result.Data! });
 }).RequireAuthorization();
 
 // POST /api/game/new?groupId={id} — generate a randomized 25-cell board

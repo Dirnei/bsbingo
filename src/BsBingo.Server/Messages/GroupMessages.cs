@@ -10,4 +10,12 @@ public sealed record UpdateGroup(string Id, string Name, string? Description, Li
 
 public sealed record DeleteGroup(string Id, string? UserId);
 
+public sealed record GenerateInviteLink(string GroupId, string UserId);
+
+public sealed record AcceptInvite(string Token, string UserId);
+
+public sealed record GetGroupByInviteToken(string Token);
+
+public sealed record GetSharedUsers(string GroupId, string UserId);
+
 public sealed record GroupResult(bool Success, string? Error = null, object? Data = null);

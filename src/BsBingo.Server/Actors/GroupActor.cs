@@ -13,7 +13,9 @@ public sealed class GroupActor : ReceiveActor
         {
             var groups = await repository.GetAllAsync();
             var filtered = groups.Where(g =>
-                g.Visibility == "public" || (msg.UserId is not null && g.CreatedBy == msg.UserId)
+                g.Visibility == "public"
+                || (msg.UserId is not null && g.CreatedBy == msg.UserId)
+                || (msg.UserId is not null && g.SharedWith.Contains(msg.UserId))
             ).ToList();
             Sender.Tell(filtered);
         });
@@ -21,6 +23,12 @@ public sealed class GroupActor : ReceiveActor
         ReceiveAsync<GetGroupById>(async msg =>
         {
             var group = await repository.GetByIdAsync(msg.Id);
+            Sender.Tell(group);
+        });
+
+        ReceiveAsync<GetGroupByInviteToken>(async msg =>
+        {
+            var group = await repository.GetByInviteTokenAsync(msg.Token);
             Sender.Tell(group);
         });
 
@@ -92,6 +100,75 @@ public sealed class GroupActor : ReceiveActor
 
             await repository.DeleteAsync(msg.Id);
             Sender.Tell(new GroupResult(true));
+        });
+
+        ReceiveAsync<GenerateInviteLink>(async msg =>
+        {
+            var existing = await repository.GetByIdAsync(msg.GroupId);
+            if (existing is null)
+            {
+                Sender.Tell(new GroupResult(false, Error: "Group not found"));
+                return;
+            }
+
+            if (existing.CreatedBy != msg.UserId)
+            {
+                Sender.Tell(new GroupResult(false, Error: "Forbidden"));
+                return;
+            }
+
+            if (existing.Visibility != "private")
+            {
+                Sender.Tell(new GroupResult(false, Error: "Only private groups can have invite links"));
+                return;
+            }
+
+            // Generate a new token (or regenerate existing one)
+            existing.InviteToken = Guid.NewGuid().ToString("N");
+            await repository.UpdateAsync(existing);
+            Sender.Tell(new GroupResult(true, Data: existing.InviteToken));
+        });
+
+        ReceiveAsync<AcceptInvite>(async msg =>
+        {
+            var existing = await repository.GetByInviteTokenAsync(msg.Token);
+            if (existing is null)
+            {
+                Sender.Tell(new GroupResult(false, Error: "Invalid invite link"));
+                return;
+            }
+
+            if (existing.CreatedBy == msg.UserId)
+            {
+                Sender.Tell(new GroupResult(true, Data: existing));
+                return;
+            }
+
+            if (!existing.SharedWith.Contains(msg.UserId))
+            {
+                existing.SharedWith.Add(msg.UserId);
+                await repository.UpdateAsync(existing);
+            }
+
+            Sender.Tell(new GroupResult(true, Data: existing));
+        });
+
+        ReceiveAsync<GetSharedUsers>(async msg =>
+        {
+            var existing = await repository.GetByIdAsync(msg.GroupId);
+            if (existing is null)
+            {
+                Sender.Tell(new GroupResult(false, Error: "Group not found"));
+                return;
+            }
+
+            if (existing.CreatedBy != msg.UserId)
+            {
+                Sender.Tell(new GroupResult(false, Error: "Forbidden"));
+                return;
+            }
+
+            Sender.Tell(new GroupResult(true, Data: existing.SharedWith));
         });
     }
 }

@@ -114,12 +114,12 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As a group owner, I want to generate an invite link for my private group so I can share it with specific people.
 
 **Acceptance Criteria:**
-- [ ] "Share" button on private group generates a unique invite URL
-- [ ] Invite URL contains a token (e.g., `/groups/invite/{token}`)
-- [ ] Visiting the invite URL grants access to the private group
-- [ ] Shared users added to the group's `sharedWith` list
-- [ ] Owner can see who has access
-- [ ] Typecheck passes
+- [x] "Share" button on private group generates a unique invite URL
+- [x] Invite URL contains a token (e.g., `/groups/invite/{token}`)
+- [x] Visiting the invite URL grants access to the private group
+- [x] Shared users added to the group's `sharedWith` list
+- [x] Owner can see who has access
+- [x] Typecheck passes
 
 ### US-011: "My Groups" dashboard
 **Description:** As an authenticated user, I want a dashboard showing all groups I own or have access to.
