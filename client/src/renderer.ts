@@ -30,7 +30,7 @@ export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): vo
         <div class="header-user-menu" id="header-user-menu"></div>
       </div>
       <h1>BULLSHIT<br><span>BINGO</span></h1>
-      <div class="subtitle">// Smart Factory Edition · Klick auf ein Feld wenn du es hörst</div>
+      <div class="subtitle">// Bullshit Edition · Klick auf ein Feld wenn du es hörst</div>
     </header>
 
     <div id="group-selector" class="group-selector"></div>
@@ -97,7 +97,7 @@ export interface HeaderAuthCallbacks {
   onSignOut: () => void;
 }
 
-export function updateHeaderAuth(user: UserInfo | null, callbacks: HeaderAuthCallbacks): void {
+export async function updateHeaderAuth(user: UserInfo | null, callbacks: HeaderAuthCallbacks): Promise<void> {
   if (!user) {
     headerUserMenuEl.innerHTML = `
       <button class="header-signin-btn" id="header-signin">Sign In</button>
@@ -106,8 +106,9 @@ export function updateHeaderAuth(user: UserInfo | null, callbacks: HeaderAuthCal
     return;
   }
 
-  const avatarHtml = user.avatar
-    ? `<img class="header-avatar" src="${escapeHtml(user.avatar)}" alt="" />`
+  const avatarUrl = user.avatar || await gravatarUrl(user.email);
+  const avatarHtml = avatarUrl
+    ? `<img class="header-avatar" src="${escapeHtml(avatarUrl)}" alt="" />`
     : `<div class="header-avatar header-avatar-placeholder">${escapeHtml(user.name.charAt(0).toUpperCase())}</div>`;
 
   headerUserMenuEl.innerHTML = `
@@ -585,6 +586,14 @@ function escapeHtml(text: string): string {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+async function gravatarUrl(email: string): Promise<string> {
+  if (!email) return '';
+  const data = new TextEncoder().encode(email.trim().toLowerCase());
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return `https://gravatar.com/avatar/${hash}?d=identicon&s=80`;
 }
 
 export function showGroupSelectorLoading(): void {
