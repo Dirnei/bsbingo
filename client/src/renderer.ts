@@ -680,6 +680,100 @@ export function showShareDialog(inviteUrl: string, onClose: () => void): void {
   overlay.addEventListener('click', (e) => { if (e.target === overlay) { cleanup(); onClose(); } });
 }
 
+export function showMyGroupsPage(
+  groups: GroupDisplayInfo[],
+  callbacks: {
+    onPlay: (id: string) => void;
+    onEdit: (id: string) => void;
+    onDelete: (id: string, name: string) => void;
+    onShare?: (id: string) => void;
+    onBack: () => void;
+  },
+  currentUserId: string,
+): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+
+  const ownedGroups = groups.filter(g => g.createdBy === currentUserId);
+  const sharedGroups = groups.filter(g => g.createdBy !== currentUserId);
+
+  groupSelectorEl.innerHTML = `
+    <div class="my-groups-page">
+      <button class="back-link" id="btn-back">← Zurück</button>
+      <div class="group-selector-title">Meine Gruppen</div>
+
+      ${ownedGroups.length > 0 ? `
+        <div class="my-groups-section">
+          <div class="my-groups-section-title">Eigene Gruppen</div>
+          <div class="group-cards">
+            ${ownedGroups.map(g => `
+              <div class="group-card" data-group-id="${escapeHtml(g.id)}">
+                <div class="group-card-name">${escapeHtml(g.name)}${g.visibility === 'private' ? ' <span class="visibility-badge visibility-private">Privat</span>' : ''}</div>
+                <div class="group-card-desc">${escapeHtml(g.description || 'Keine Beschreibung')}</div>
+                <div class="group-card-count">${g.wordCount} Wörter</div>
+                <div class="group-card-actions">
+                  <button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>
+                  ${g.visibility === 'private' ? `<button class="group-action-btn group-action-share" data-action="share">🔗 Teilen</button>` : ''}
+                  <button class="group-action-btn group-action-edit" data-action="edit">✎ Bearbeiten</button>
+                  <button class="group-action-btn group-action-delete" data-action="delete">✕ Löschen</button>
+                </div>
+                ${g.sharedWith && g.sharedWith.length > 0 ? `<div class="group-card-shared">${g.sharedWith.length} Nutzer haben Zugriff</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+
+      ${sharedGroups.length > 0 ? `
+        <div class="my-groups-section">
+          <div class="my-groups-section-title">Geteilte Gruppen</div>
+          <div class="group-cards">
+            ${sharedGroups.map(g => `
+              <div class="group-card" data-group-id="${escapeHtml(g.id)}">
+                <div class="group-card-name">${escapeHtml(g.name)} <span class="visibility-badge visibility-private">Geteilt</span></div>
+                <div class="group-card-desc">${escapeHtml(g.description || 'Keine Beschreibung')}</div>
+                <div class="group-card-count">${g.wordCount} Wörter</div>
+                <div class="group-card-actions">
+                  <button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+
+      ${ownedGroups.length === 0 && sharedGroups.length === 0 ? `
+        <div class="group-selector-status">Du hast noch keine Gruppen erstellt oder Zugriff auf geteilte Gruppen.</div>
+      ` : ''}
+    </div>
+  `;
+
+  // Abort previous listener to prevent accumulation
+  if (groupListAbortController) groupListAbortController.abort();
+  groupListAbortController = new AbortController();
+  const signal = groupListAbortController.signal;
+
+  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-back')!.addEventListener('click', callbacks.onBack, { signal });
+
+  groupSelectorEl.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
+    if (!btn) return;
+    const card = btn.closest<HTMLElement>('.group-card');
+    if (!card) return;
+    const groupId = card.dataset.groupId;
+    if (!groupId) return;
+
+    const action = btn.dataset.action;
+    if (action === 'play') callbacks.onPlay(groupId);
+    else if (action === 'share' && callbacks.onShare) callbacks.onShare(groupId);
+    else if (action === 'edit') callbacks.onEdit(groupId);
+    else if (action === 'delete') {
+      const name = card.querySelector('.group-card-name')?.textContent ?? '';
+      callbacks.onDelete(groupId, name);
+    }
+  }, { signal });
+}
+
 export function showStaticPage(title: string, html: string, onBack: () => void): void {
   groupSelectorEl.classList.remove('hidden');
   gameViewEl.classList.add('hidden');

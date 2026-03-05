@@ -125,12 +125,12 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As an authenticated user, I want a dashboard showing all groups I own or have access to.
 
 **Acceptance Criteria:**
-- [ ] Page at `/my-groups` (requires authentication)
-- [ ] Shows groups owned by the current user
-- [ ] Shows private groups shared with the current user
-- [ ] Edit/delete actions available for owned groups
-- [ ] Play action available for all listed groups
-- [ ] Typecheck passes
+- [x] Page at `/my-groups` (requires authentication)
+- [x] Shows groups owned by the current user
+- [x] Shows private groups shared with the current user
+- [x] Edit/delete actions available for owned groups
+- [x] Play action available for all listed groups
+- [x] Typecheck passes
 
 ## Functional Requirements
 

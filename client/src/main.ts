@@ -6,9 +6,10 @@ import {
   showGroupList, showGroupSelectorLoading, showGroupSelectorError, showGameView,
   showDeleteConfirmDialog, showGroupCreateForm, showGroupEditForm, showToast,
   showStaticPage, showLoginPage, updateHeaderAuth, showInvitePage, showShareDialog,
+  showMyGroupsPage,
 } from './renderer.ts';
 import type { GroupDisplayInfo } from './renderer.ts';
-import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn } from './api.ts';
+import { fetchGroups, fetchMyGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn } from './api.ts';
 import type { UserInfo } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
 
@@ -212,7 +213,41 @@ registerRoutes([
         navigate('/login');
         return;
       }
-      await loadGroups();
+      showGroupSelectorLoading();
+      try {
+        const myGroups = await fetchMyGroups();
+        showMyGroupsPage(myGroups, {
+          onPlay: (id) => navigate(`/game/${id}`),
+          onEdit: (id) => navigate(`/groups/${id}/edit`),
+          onDelete: (id, name) => {
+            showDeleteConfirmDialog(name, async () => {
+              try {
+                await deleteGroup(id);
+                showToast(`„${name}" wurde gelöscht`);
+                navigate('/my-groups');
+              } catch (err) {
+                showGroupSelectorError(`Fehler beim Löschen: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
+              }
+            }, () => {
+              navigate('/my-groups');
+            });
+          },
+          onShare: async (id) => {
+            try {
+              const inviteToken = await generateInviteLink(id);
+              const inviteUrl = `${window.location.origin}/#/invite/${inviteToken}`;
+              showShareDialog(inviteUrl, () => {
+                navigate('/my-groups');
+              });
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen des Einladungslinks');
+            }
+          },
+          onBack: () => navigate('/groups'),
+        }, currentUser!.id);
+      } catch (err) {
+        showGroupSelectorError(`Fehler beim Laden: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
+      }
     },
   },
   {

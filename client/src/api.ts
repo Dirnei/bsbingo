@@ -78,6 +78,16 @@ export async function fetchGroups(): Promise<GroupSummary[]> {
   return res.json();
 }
 
+export async function fetchMyGroups(): Promise<GroupSummary[]> {
+  const token = getToken();
+  if (!token) throw new Error('Not authenticated');
+  const res = await fetch(`${BASE_URL}/groups/my`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Failed to fetch my groups: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchBoard(groupId: string): Promise<BoardResponse> {
   const res = await fetch(`${BASE_URL}/game/new?groupId=${encodeURIComponent(groupId)}`, {
     method: 'POST',

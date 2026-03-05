@@ -20,6 +20,16 @@ public sealed class GroupActor : ReceiveActor
             Sender.Tell(filtered);
         });
 
+        ReceiveAsync<GetMyGroups>(async msg =>
+        {
+            var groups = await repository.GetAllAsync();
+            var myGroups = groups.Where(g =>
+                g.CreatedBy == msg.UserId
+                || g.SharedWith.Contains(msg.UserId)
+            ).ToList();
+            Sender.Tell(myGroups);
+        });
+
         ReceiveAsync<GetGroupById>(async msg =>
         {
             var group = await repository.GetByIdAsync(msg.Id);

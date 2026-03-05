@@ -887,6 +887,28 @@ footer {
   color: var(--accent);
 }
 
+/* My Groups Page */
+.my-groups-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.my-groups-section {
+  margin-bottom: 28px;
+}
+
+.my-groups-section-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
 /* Login Page */
 .login-page {
   max-width: 420px;

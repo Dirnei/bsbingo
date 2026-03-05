@@ -16,6 +16,8 @@ public sealed record AcceptInvite(string Token, string UserId);
 
 public sealed record GetGroupByInviteToken(string Token);
 
+public sealed record GetMyGroups(string UserId);
+
 public sealed record GetSharedUsers(string GroupId, string UserId);
 
 public sealed record GroupResult(bool Success, string? Error = null, object? Data = null);
