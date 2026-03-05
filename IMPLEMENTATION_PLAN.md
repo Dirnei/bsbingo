@@ -50,12 +50,12 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As an authenticated user, I need a JWT token after login so the frontend can authenticate API requests.
 
 **Acceptance Criteria:**
-- [ ] After successful OAuth callback, a JWT is issued
-- [ ] JWT contains user ID, display name, and email
-- [ ] JWT has configurable expiration (default 7 days)
-- [ ] JWT secret configurable via environment variables
-- [ ] Token returned to frontend (via cookie or redirect with token)
-- [ ] Typecheck passes
+- [x] After successful OAuth callback, a JWT is issued
+- [x] JWT contains user ID, display name, and email
+- [x] JWT has configurable expiration (default 7 days)
+- [x] JWT secret configurable via environment variables
+- [x] Token returned to frontend (via cookie or redirect with token)
+- [x] Typecheck passes
 
 ### US-005: Auth middleware for protected routes
 **Description:** As a developer, I need authentication middleware so certain API endpoints require a valid JWT.
