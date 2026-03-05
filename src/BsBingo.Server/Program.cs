@@ -194,7 +194,7 @@ app.MapGet("/api/auth/me", (ClaimsPrincipal user) =>
     });
 }).RequireAuthorization();
 
-// GET /api/groups — list all groups (id, name, description, word count)
+// GET /api/groups — list all groups (id, name, description, word count, createdBy)
 app.MapGet("/api/groups", async (IRequiredActor<GroupActor> groupActor) =>
 {
     var groups = await groupActor.ActorRef.Ask<List<Group>>(new GetAllGroups(), askTimeout);
@@ -203,7 +203,8 @@ app.MapGet("/api/groups", async (IRequiredActor<GroupActor> groupActor) =>
         g.Id,
         g.Name,
         g.Description,
-        WordCount = g.Words.Count
+        WordCount = g.Words.Count,
+        g.CreatedBy
     }));
 });
 
@@ -215,10 +216,11 @@ app.MapGet("/api/groups/{id}", async (string id, IRequiredActor<GroupActor> grou
 });
 
 // POST /api/groups — create a new group
-app.MapPost("/api/groups", async (CreateGroupRequest request, IRequiredActor<GroupActor> groupActor) =>
+app.MapPost("/api/groups", async (CreateGroupRequest request, ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
 {
+    var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
     var result = await groupActor.ActorRef.Ask<GroupResult>(
-        new CreateGroup(request.Name, request.Description, request.Words), askTimeout);
+        new CreateGroup(request.Name, request.Description, request.Words, userId), askTimeout);
 
     if (!result.Success)
         return Results.BadRequest(new { error = result.Error });
@@ -229,34 +231,47 @@ app.MapPost("/api/groups", async (CreateGroupRequest request, IRequiredActor<Gro
         group.Id,
         group.Name,
         group.Description,
-        WordCount = group.Words.Count
+        WordCount = group.Words.Count,
+        group.CreatedBy
     });
 }).RequireAuthorization();
 
 // PUT /api/groups/{id} — update an existing group
-app.MapPut("/api/groups/{id}", async (string id, UpdateGroupRequest request, IRequiredActor<GroupActor> groupActor) =>
+app.MapPut("/api/groups/{id}", async (string id, UpdateGroupRequest request, ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
 {
+    var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
     var result = await groupActor.ActorRef.Ask<GroupResult>(
-        new UpdateGroup(id, request.Name, request.Description, request.Words), askTimeout);
+        new UpdateGroup(id, request.Name, request.Description, request.Words, userId), askTimeout);
 
     if (!result.Success)
     {
-        return result.Error == "Group not found"
-            ? Results.NotFound(new { error = result.Error })
-            : Results.BadRequest(new { error = result.Error });
+        return result.Error switch
+        {
+            "Group not found" => Results.NotFound(new { error = result.Error }),
+            "Forbidden" => Results.StatusCode(403),
+            _ => Results.BadRequest(new { error = result.Error })
+        };
     }
 
     return Results.Ok(result.Data);
 }).RequireAuthorization();
 
 // DELETE /api/groups/{id} — delete a group
-app.MapDelete("/api/groups/{id}", async (string id, IRequiredActor<GroupActor> groupActor) =>
+app.MapDelete("/api/groups/{id}", async (string id, ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
 {
+    var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
     var result = await groupActor.ActorRef.Ask<GroupResult>(
-        new DeleteGroup(id), askTimeout);
+        new DeleteGroup(id, userId), askTimeout);
 
     if (!result.Success)
-        return Results.NotFound(new { error = result.Error });
+    {
+        return result.Error switch
+        {
+            "Group not found" => Results.NotFound(new { error = result.Error }),
+            "Forbidden" => Results.StatusCode(403),
+            _ => Results.BadRequest(new { error = result.Error })
+        };
+    }
 
     return Results.NoContent();
 }).RequireAuthorization();

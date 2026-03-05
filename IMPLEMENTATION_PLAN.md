@@ -93,11 +93,11 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As an authenticated user, I want groups I create to be tied to my account so I can manage them from "My Groups."
 
 **Acceptance Criteria:**
-- [ ] `createdBy` field on groups is set to the current user's ID on creation
-- [ ] Only the group owner can edit or delete their groups
-- [ ] Non-owners see play button only (no edit/delete)
-- [ ] Seed data groups have no owner (community groups)
-- [ ] Typecheck passes
+- [x] `createdBy` field on groups is set to the current user's ID on creation
+- [x] Only the group owner can edit or delete their groups
+- [x] Non-owners see play button only (no edit/delete)
+- [x] Seed data groups have no owner (community groups)
+- [x] Typecheck passes
 
 ### US-009: Public/private group visibility
 **Description:** As a group owner, I want to set my group as public or private so I can control who can play it.

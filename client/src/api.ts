@@ -3,6 +3,7 @@ export interface GroupSummary {
   name: string;
   description: string;
   wordCount: number;
+  createdBy: string | null;
 }
 
 export interface BoardCell {
@@ -90,9 +91,12 @@ export interface ApiError {
 }
 
 export async function createGroup(data: CreateGroupRequest): Promise<GroupSummary> {
+  const token = getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   const res = await fetch(`${BASE_URL}/groups`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -119,9 +123,12 @@ export async function fetchGroup(groupId: string): Promise<GroupDetail> {
 }
 
 export async function updateGroup(groupId: string, data: CreateGroupRequest): Promise<GroupSummary> {
+  const token = getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   const res = await fetch(`${BASE_URL}/groups/${encodeURIComponent(groupId)}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -133,8 +140,12 @@ export async function updateGroup(groupId: string, data: CreateGroupRequest): Pr
 }
 
 export async function deleteGroup(groupId: string): Promise<void> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   const res = await fetch(`${BASE_URL}/groups/${encodeURIComponent(groupId)}`, {
     method: 'DELETE',
+    headers,
   });
   if (!res.ok) {
     if (res.status === 404) throw new Error('Gruppe nicht gefunden');

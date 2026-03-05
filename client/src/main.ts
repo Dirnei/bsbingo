@@ -70,7 +70,7 @@ function showGroupListWithActions(): void {
     onCreate: () => {
       navigate('/groups/new');
     },
-  });
+  }, currentUser?.id);
 }
 
 async function startGame(groupId: string): Promise<void> {

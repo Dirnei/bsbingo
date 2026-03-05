@@ -29,7 +29,8 @@ public sealed class GroupActor : ReceiveActor
                 {
                     Name = msg.Name,
                     Description = msg.Description,
-                    Words = msg.Words
+                    Words = msg.Words,
+                    CreatedBy = msg.UserId
                 };
                 await repository.InsertAsync(group);
                 Sender.Tell(new GroupResult(true, Data: group));
@@ -51,6 +52,12 @@ public sealed class GroupActor : ReceiveActor
                     return;
                 }
 
+                if (existing.CreatedBy is not null && existing.CreatedBy != msg.UserId)
+                {
+                    Sender.Tell(new GroupResult(false, Error: "Forbidden"));
+                    return;
+                }
+
                 existing.Name = msg.Name;
                 existing.Description = msg.Description;
                 existing.Words = msg.Words;
@@ -65,10 +72,21 @@ public sealed class GroupActor : ReceiveActor
 
         ReceiveAsync<DeleteGroup>(async msg =>
         {
-            var deleted = await repository.DeleteAsync(msg.Id);
-            Sender.Tell(deleted
-                ? new GroupResult(true)
-                : new GroupResult(false, Error: "Group not found"));
+            var existing = await repository.GetByIdAsync(msg.Id);
+            if (existing is null)
+            {
+                Sender.Tell(new GroupResult(false, Error: "Group not found"));
+                return;
+            }
+
+            if (existing.CreatedBy is not null && existing.CreatedBy != msg.UserId)
+            {
+                Sender.Tell(new GroupResult(false, Error: "Forbidden"));
+                return;
+            }
+
+            await repository.DeleteAsync(msg.Id);
+            Sender.Tell(new GroupResult(true));
         });
     }
 }

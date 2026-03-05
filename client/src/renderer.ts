@@ -223,11 +223,13 @@ export interface GroupDisplayInfo {
   name: string;
   description: string;
   wordCount: number;
+  createdBy: string | null;
 }
 
 export function showGroupList(
   groups: GroupDisplayInfo[],
   callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void },
+  currentUserId?: string | null,
 ): void {
   groupSelectorEl.classList.remove('hidden');
   gameViewEl.classList.add('hidden');
@@ -250,18 +252,21 @@ export function showGroupList(
       <button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>
     </div>
     <div class="group-cards">
-      ${groups.map(g => `
+      ${groups.map(g => {
+        const isOwner = !!currentUserId && g.createdBy === currentUserId;
+        return `
         <div class="group-card" data-group-id="${escapeHtml(g.id)}">
           <div class="group-card-name">${escapeHtml(g.name)}</div>
           <div class="group-card-desc">${escapeHtml(g.description || 'Keine Beschreibung')}</div>
           <div class="group-card-count">${g.wordCount} Wörter</div>
           <div class="group-card-actions">
             <button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>
-            <button class="group-action-btn group-action-edit" data-action="edit">✎ Bearbeiten</button>
-            <button class="group-action-btn group-action-delete" data-action="delete">✕ Löschen</button>
+            ${isOwner ? `<button class="group-action-btn group-action-edit" data-action="edit">✎ Bearbeiten</button>` : ''}
+            ${isOwner ? `<button class="group-action-btn group-action-delete" data-action="delete">✕ Löschen</button>` : ''}
           </div>
         </div>
-      `).join('')}
+      `;
+      }).join('')}
     </div>
   `;
 
