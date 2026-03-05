@@ -180,6 +180,36 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 - Invite links work for sharing private groups
 - Anonymous users can still browse and play public groups
 
+## Phase 4 — UI/UX Improvements & Game Logic
+
+### US-012: Show private groups on the main page, remove "My Groups" page
+**Description:** As a user, I want to see all groups I have access to (public + my private + shared with me) on the main group list so I don't need a separate "My Groups" page.
+
+**Acceptance Criteria:**
+- [x] Main group list (`/groups`) shows public groups + private groups owned by or shared with the current user
+- [x] Remove the `/my-groups` route and `showMyGroupsPage` renderer
+- [x] Remove "Meine Gruppen" from the header dropdown menu
+- [x] Private groups are visually distinguished (e.g., "Privat" badge already exists)
+- [x] Typecheck passes
+
+### US-013: Public groups can only be edited by their owner
+**Description:** As a user, I want public groups to only be editable by their creator so community groups stay consistent.
+
+**Acceptance Criteria:**
+- [ ] Edit and delete buttons only shown for groups where `createdBy` matches the current user
+- [ ] Backend rejects edit/delete requests from non-owners (return 403)
+- [ ] Seed data groups (no owner) cannot be edited or deleted by anyone
+- [ ] Typecheck passes
+
+### US-014: Lock board after bingo
+**Description:** As a player, once I hit a bingo the board should lock so no more cells can be toggled until I start a new game or reset.
+
+**Acceptance Criteria:**
+- [ ] After a bingo is detected, clicking cells has no effect
+- [ ] The "Neues Spiel" and "Reset" buttons still work
+- [ ] Visual feedback that the board is locked (e.g., cells appear non-interactive)
+- [ ] Typecheck passes
+
 ## Open Questions
 
 - Should JWT be stored in an httpOnly cookie or localStorage?

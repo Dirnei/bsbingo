@@ -233,24 +233,6 @@ app.MapGet("/api/groups", async (ClaimsPrincipal user, IRequiredActor<GroupActor
     }));
 });
 
-// GET /api/groups/my — groups owned by or shared with the current user
-app.MapGet("/api/groups/my", async (ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
-{
-    var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
-    var groups = await groupActor.ActorRef.Ask<List<Group>>(new GetMyGroups(userId!), askTimeout);
-    return Results.Ok(groups.Select(g => new
-    {
-        g.Id,
-        g.Name,
-        g.Description,
-        WordCount = g.Words.Count,
-        g.CreatedBy,
-        g.Visibility,
-        InviteToken = g.CreatedBy == userId ? g.InviteToken : null,
-        SharedWith = g.CreatedBy == userId ? g.SharedWith : null
-    }));
-}).RequireAuthorization();
-
 // GET /api/groups/{id} — group details including all words
 app.MapGet("/api/groups/{id}", async (string id, IRequiredActor<GroupActor> groupActor) =>
 {
