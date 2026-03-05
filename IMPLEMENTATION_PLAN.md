@@ -19,11 +19,11 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As a developer, I need ASP.NET Core external authentication configured for GitHub and Google so users can sign in with their existing accounts.
 
 **Acceptance Criteria:**
-- [ ] GitHub OAuth provider configured in ASP.NET Core Authentication
-- [ ] Google OAuth provider configured in ASP.NET Core Authentication
-- [ ] Client IDs and secrets configurable via environment variables / `appsettings.json`
-- [ ] OAuth callback endpoints registered and working
-- [ ] Typecheck passes
+- [x] GitHub OAuth provider configured in ASP.NET Core Authentication
+- [x] Google OAuth provider configured in ASP.NET Core Authentication
+- [x] Client IDs and secrets configurable via environment variables / `appsettings.json`
+- [x] OAuth callback endpoints registered and working
+- [x] Typecheck passes
 
 ### US-002: User creation on first login
 **Description:** As a new user, I want my account created automatically when I first sign in so there is no separate registration step.
