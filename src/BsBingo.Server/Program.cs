@@ -27,6 +27,7 @@ var mongoDatabaseName = builder.Configuration.GetValue<string>("MongoDB:Database
 builder.Services.AddSingleton<IMongoClient>(new MongoClient(mongoConnectionString));
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(mongoDatabaseName));
 builder.Services.AddSingleton<GroupRepository>();
+builder.Services.AddSingleton<UserRepository>();
 
 // Authentication — OAuth + JWT
 var jwtSecret = builder.Configuration.GetValue<string>("Jwt:Secret")
@@ -82,6 +83,7 @@ builder.Services.AddAkka("bsbingo", configurationBuilder =>
     {
         helper.Register<GroupActor>();
         helper.Register<GameActor>();
+        helper.Register<UserActor>();
     });
 });
 
@@ -121,12 +123,30 @@ app.MapGet("/api/auth/login/{provider}", (string provider) =>
         [scheme]);
 });
 
-// After OAuth callback, issue a JWT and redirect to the frontend
-app.MapGet("/api/auth/token", (HttpContext context, IConfiguration config) =>
+// After OAuth callback, create/find user in DB, issue a JWT, and redirect to the frontend
+app.MapGet("/api/auth/token", async (HttpContext context, IConfiguration config, IRequiredActor<UserActor> userActor) =>
 {
-    var user = context.User;
-    if (user.Identity?.IsAuthenticated != true)
+    var principal = context.User;
+    if (principal.Identity?.IsAuthenticated != true)
         return Results.Unauthorized();
+
+    var provider = principal.Identity.AuthenticationType ?? "";
+    var providerId = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+    var displayName = principal.FindFirstValue(ClaimTypes.Name) ?? "";
+    var email = principal.FindFirstValue(ClaimTypes.Email) ?? "";
+    var avatarUrl = principal.FindFirstValue("urn:github:avatar")
+        ?? principal.FindFirstValue("picture")
+        ?? "";
+
+    // Upsert user in MongoDB via UserActor
+    var userResult = await userActor.ActorRef.Ask<UserResult>(
+        new GetOrCreateUser(provider, providerId, displayName, email, string.IsNullOrEmpty(avatarUrl) ? null : avatarUrl),
+        askTimeout);
+
+    if (!userResult.Success || userResult.User is null)
+        return Results.Problem("Failed to create or find user.");
+
+    var dbUser = userResult.User;
 
     var secret = config.GetValue<string>("Jwt:Secret")!;
     var issuer = config.GetValue<string>("Jwt:Issuer") ?? "bsbingo";
@@ -135,11 +155,11 @@ app.MapGet("/api/auth/token", (HttpContext context, IConfiguration config) =>
 
     var claims = new List<Claim>
     {
-        new(JwtRegisteredClaimNames.Sub, user.FindFirstValue(ClaimTypes.NameIdentifier) ?? ""),
-        new(JwtRegisteredClaimNames.Email, user.FindFirstValue(ClaimTypes.Email) ?? ""),
-        new("name", user.FindFirstValue(ClaimTypes.Name) ?? ""),
-        new("avatar", user.FindFirstValue("urn:github:avatar") ?? user.FindFirstValue("picture") ?? ""),
-        new("provider", user.FindFirstValue("provider") ?? user.Identity.AuthenticationType ?? "")
+        new(JwtRegisteredClaimNames.Sub, dbUser.Id),
+        new(JwtRegisteredClaimNames.Email, dbUser.Email),
+        new("name", dbUser.DisplayName),
+        new("avatar", dbUser.AvatarUrl ?? ""),
+        new("provider", provider)
     };
 
     var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));

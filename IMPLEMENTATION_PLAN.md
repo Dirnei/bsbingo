@@ -29,12 +29,12 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As a new user, I want my account created automatically when I first sign in so there is no separate registration step.
 
 **Acceptance Criteria:**
-- [ ] On first OAuth login, a User document is created in MongoDB
-- [ ] User document stores: displayName, email, avatarUrl (from OAuth profile)
-- [ ] User document stores linked OAuth provider info (provider name + provider user ID)
-- [ ] If user already exists (same provider + providerId), no duplicate is created
-- [ ] A user can link multiple OAuth providers to the same account (same email match)
-- [ ] Typecheck passes
+- [x] On first OAuth login, a User document is created in MongoDB
+- [x] User document stores: displayName, email, avatarUrl (from OAuth profile)
+- [x] User document stores linked OAuth provider info (provider name + provider user ID)
+- [x] If user already exists (same provider + providerId), no duplicate is created
+- [x] A user can link multiple OAuth providers to the same account (same email match)
+- [x] Typecheck passes
 
 ### US-003: Implement UserActor
 **Description:** As a developer, I need a UserActor to manage user state and OAuth identity linking through the actor system.
