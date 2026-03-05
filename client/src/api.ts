@@ -3,6 +3,11 @@ export interface GroupSummary {
   name: string;
   description: string;
   wordCount: number;
+  createdBy: string | null;
+  createdByName: string | null;
+  visibility: string;
+  inviteToken: string | null;
+  sharedWith: string[] | null;
 }
 
 export interface BoardCell {
@@ -16,9 +21,63 @@ export interface BoardResponse {
 }
 
 const BASE_URL = '/api';
+const BACKEND_ORIGIN = import.meta.env.VITE_BACKEND_ORIGIN || '';
+
+// --- Auth ---
+
+const TOKEN_KEY = 'bsbingo_token';
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+export function isLoggedIn(): boolean {
+  return getToken() !== null;
+}
+
+export interface UserInfo {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  provider: string;
+}
+
+export async function fetchMe(): Promise<UserInfo | null> {
+  const token = getToken();
+  if (!token) return null;
+  const res = await fetch(`${BASE_URL}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    if (res.status === 401) {
+      clearToken();
+      return null;
+    }
+    return null;
+  }
+  return res.json();
+}
+
+export function getLoginUrl(provider: 'github' | 'google'): string {
+  // OAuth requires a full redirect chain (backend → GitHub → backend → frontend),
+  // so we must link directly to the backend origin, not through the Vite proxy.
+  return `${BACKEND_ORIGIN}${BASE_URL}/auth/login/${provider}`;
+}
 
 export async function fetchGroups(): Promise<GroupSummary[]> {
-  const res = await fetch(`${BASE_URL}/groups`);
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${BASE_URL}/groups`, { headers });
   if (!res.ok) throw new Error(`Failed to fetch groups: ${res.status}`);
   return res.json();
 }
@@ -35,6 +94,7 @@ export interface CreateGroupRequest {
   name: string;
   description: string;
   words: string[];
+  visibility?: string;
 }
 
 export interface ApiError {
@@ -42,9 +102,12 @@ export interface ApiError {
 }
 
 export async function createGroup(data: CreateGroupRequest): Promise<GroupSummary> {
+  const token = getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   const res = await fetch(`${BASE_URL}/groups`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -59,6 +122,7 @@ export interface GroupDetail {
   name: string;
   description: string | null;
   words: string[];
+  visibility: string;
 }
 
 export async function fetchGroup(groupId: string): Promise<GroupDetail> {
@@ -71,9 +135,12 @@ export async function fetchGroup(groupId: string): Promise<GroupDetail> {
 }
 
 export async function updateGroup(groupId: string, data: CreateGroupRequest): Promise<GroupSummary> {
+  const token = getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   const res = await fetch(`${BASE_URL}/groups/${encodeURIComponent(groupId)}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -85,11 +152,72 @@ export async function updateGroup(groupId: string, data: CreateGroupRequest): Pr
 }
 
 export async function deleteGroup(groupId: string): Promise<void> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   const res = await fetch(`${BASE_URL}/groups/${encodeURIComponent(groupId)}`, {
     method: 'DELETE',
+    headers,
   });
   if (!res.ok) {
     if (res.status === 404) throw new Error('Gruppe nicht gefunden');
     throw new Error(`Failed to delete group: ${res.status}`);
   }
+}
+
+export interface InviteInfo {
+  id: string;
+  name: string;
+  description: string | null;
+  wordCount: number;
+}
+
+export async function generateInviteLink(groupId: string): Promise<string> {
+  const token = getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${BASE_URL}/groups/${encodeURIComponent(groupId)}/invite`, {
+    method: 'POST',
+    headers,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` })) as ApiError;
+    throw new Error(body.error || `Failed to generate invite: ${res.status}`);
+  }
+  const data = await res.json();
+  return data.inviteToken;
+}
+
+export async function fetchInviteInfo(inviteToken: string): Promise<InviteInfo> {
+  const res = await fetch(`${BASE_URL}/invite/${encodeURIComponent(inviteToken)}`);
+  if (!res.ok) {
+    if (res.status === 404) throw new Error('Ungültiger Einladungslink');
+    throw new Error(`Failed to fetch invite info: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function acceptInvite(inviteToken: string): Promise<{ id: string; name: string }> {
+  const token = getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${BASE_URL}/invite/${encodeURIComponent(inviteToken)}/accept`, {
+    method: 'POST',
+    headers,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` })) as ApiError;
+    throw new Error(body.error || `Failed to accept invite: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchSharedUsers(groupId: string): Promise<string[]> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${BASE_URL}/groups/${encodeURIComponent(groupId)}/shared`, { headers });
+  if (!res.ok) throw new Error(`Failed to fetch shared users: ${res.status}`);
+  const data = await res.json();
+  return data.sharedWith;
 }

@@ -22,6 +22,10 @@ public sealed class Group
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public List<string> SharedWith { get; set; } = [];
+
+    public string? InviteToken { get; set; }
+
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public void Validate()

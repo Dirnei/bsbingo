@@ -15,7 +15,10 @@ export function navigate(hash: string): void {
 }
 
 export function resolve(): void {
-  const hash = window.location.hash.slice(1) || '/groups';
+  const rawHash = window.location.hash.slice(1) || '/groups';
+  // Strip query string for route matching (handlers can read it from window.location.hash)
+  const qIndex = rawHash.indexOf('?');
+  const hash = qIndex !== -1 ? rawHash.slice(0, qIndex) : rawHash;
 
   for (const route of routes) {
     const params = matchRoute(route.pattern, hash);

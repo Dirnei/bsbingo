@@ -5,15 +5,34 @@ import {
   mountApp, renderBoard, updateCell, showLoading, showError, clearStatus,
   showGroupList, showGroupSelectorLoading, showGroupSelectorError, showGameView,
   showDeleteConfirmDialog, showGroupCreateForm, showGroupEditForm, showToast,
-  showStaticPage,
+  showStaticPage, showLoginPage, updateHeaderAuth, showInvitePage, showShareDialog,
 } from './renderer.ts';
 import type { GroupDisplayInfo } from './renderer.ts';
-import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup } from './api.ts';
+import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn } from './api.ts';
+import type { UserInfo } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
 
 let state: BingoState;
 let currentGroupId: string | null = null;
 let cachedGroups: GroupDisplayInfo[] = [];
+let currentUser: UserInfo | null = null;
+
+function refreshHeaderAuth(): void {
+  updateHeaderAuth(currentUser, {
+    onSignIn: () => navigate('/login'),
+    onSignOut: () => {
+      clearToken();
+      currentUser = null;
+      refreshHeaderAuth();
+      navigate('/groups');
+    },
+  });
+}
+
+async function loadCurrentUser(): Promise<void> {
+  currentUser = await fetchMe();
+  refreshHeaderAuth();
+}
 
 async function loadGroups(): Promise<void> {
   showGroupSelectorLoading();
@@ -50,7 +69,19 @@ function showGroupListWithActions(): void {
     onCreate: () => {
       navigate('/groups/new');
     },
-  });
+    onShare: async (id) => {
+      try {
+        const inviteToken = await generateInviteLink(id);
+        const inviteUrl = `${window.location.origin}/#/invite/${inviteToken}`;
+        showShareDialog(inviteUrl, () => {
+          // Refresh to update invite token in cached data
+          loadGroups();
+        });
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen des Einladungslinks');
+      }
+    },
+  }, currentUser?.id);
 }
 
 async function startGame(groupId: string): Promise<void> {
@@ -103,7 +134,7 @@ registerRoutes([
     handler: () => {
       showGroupCreateForm({
         onSubmit: async (data) => {
-          await createGroup({ name: data.name, description: data.description, words: data.words });
+          await createGroup({ name: data.name, description: data.description, words: data.words, visibility: data.visibility });
           cachedGroups = await fetchGroups();
           navigate('/groups');
         },
@@ -121,9 +152,10 @@ registerRoutes([
           initialName: group.name,
           initialDescription: group.description ?? '',
           initialWords: group.words,
+          initialVisibility: group.visibility ?? 'public',
           callbacks: {
             onSubmit: async (data) => {
-              await updateGroup(params.id, { name: data.name, description: data.description, words: data.words });
+              await updateGroup(params.id, { name: data.name, description: data.description, words: data.words, visibility: data.visibility });
               cachedGroups = await fetchGroups();
               navigate('/groups');
             },
@@ -143,6 +175,62 @@ registerRoutes([
     pattern: '/game/:id',
     handler: (params) => {
       startGame(params.id);
+    },
+  },
+  {
+    pattern: '/invite/:token',
+    handler: async (params) => {
+      showGroupSelectorLoading();
+      try {
+        const info = await fetchInviteInfo(params.token);
+        showInvitePage(info, {
+          onAccept: async () => {
+            if (!isLoggedIn()) {
+              navigate('/login');
+              return;
+            }
+            try {
+              const result = await acceptInvite(params.token);
+              showToast(`Du hast jetzt Zugriff auf „${result.name}"`);
+              navigate('/groups');
+            } catch (err) {
+              showGroupSelectorError(err instanceof Error ? err.message : 'Fehler beim Annehmen der Einladung');
+            }
+          },
+          onBack: () => navigate('/groups'),
+        }, isLoggedIn());
+      } catch (err) {
+        showGroupSelectorError(err instanceof Error ? err.message : 'Ungültiger Einladungslink');
+      }
+    },
+  },
+  {
+    pattern: '/login',
+    handler: () => {
+      showLoginPage({
+        onGitHub: () => { window.location.href = getLoginUrl('github'); },
+        onGoogle: () => { window.location.href = getLoginUrl('google'); },
+        onBack: () => navigate('/groups'),
+      });
+    },
+  },
+  {
+    pattern: '/auth/callback',
+    handler: async () => {
+      // Extract token from query string (the backend redirects to /#/auth/callback?token=...)
+      const hashPart = window.location.hash.slice(1); // remove #
+      const qIndex = hashPart.indexOf('?');
+      if (qIndex !== -1) {
+        const params = new URLSearchParams(hashPart.slice(qIndex));
+        const token = params.get('token');
+        if (token) {
+          setToken(token);
+          await loadCurrentUser();
+          navigate('/groups');
+          return;
+        }
+      }
+      navigate('/login');
     },
   },
   {
@@ -199,4 +287,5 @@ registerRoutes([
   },
 ]);
 
-resolve();
+// Load current user before resolving routes so currentUser.id is available
+loadCurrentUser().then(() => resolve());

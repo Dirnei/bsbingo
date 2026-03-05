@@ -19,118 +19,118 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As a developer, I need ASP.NET Core external authentication configured for GitHub and Google so users can sign in with their existing accounts.
 
 **Acceptance Criteria:**
-- [ ] GitHub OAuth provider configured in ASP.NET Core Authentication
-- [ ] Google OAuth provider configured in ASP.NET Core Authentication
-- [ ] Client IDs and secrets configurable via environment variables / `appsettings.json`
-- [ ] OAuth callback endpoints registered and working
-- [ ] Typecheck passes
+- [x] GitHub OAuth provider configured in ASP.NET Core Authentication
+- [x] Google OAuth provider configured in ASP.NET Core Authentication
+- [x] Client IDs and secrets configurable via environment variables / `appsettings.json`
+- [x] OAuth callback endpoints registered and working
+- [x] Typecheck passes
 
 ### US-002: User creation on first login
 **Description:** As a new user, I want my account created automatically when I first sign in so there is no separate registration step.
 
 **Acceptance Criteria:**
-- [ ] On first OAuth login, a User document is created in MongoDB
-- [ ] User document stores: displayName, email, avatarUrl (from OAuth profile)
-- [ ] User document stores linked OAuth provider info (provider name + provider user ID)
-- [ ] If user already exists (same provider + providerId), no duplicate is created
-- [ ] A user can link multiple OAuth providers to the same account (same email match)
-- [ ] Typecheck passes
+- [x] On first OAuth login, a User document is created in MongoDB
+- [x] User document stores: displayName, email, avatarUrl (from OAuth profile)
+- [x] User document stores linked OAuth provider info (provider name + provider user ID)
+- [x] If user already exists (same provider + providerId), no duplicate is created
+- [x] A user can link multiple OAuth providers to the same account (same email match)
+- [x] Typecheck passes
 
 ### US-003: Implement UserActor
 **Description:** As a developer, I need a UserActor to manage user state and OAuth identity linking through the actor system.
 
 **Acceptance Criteria:**
-- [ ] UserActor handles `GetOrCreateUser` message (upsert on OAuth login)
-- [ ] UserActor handles `GetUser` message (by ID)
-- [ ] UserActor handles `LinkOAuthProvider` message (add provider to existing user)
-- [ ] Registered via Servus.Akka DI integration
-- [ ] Typecheck passes
+- [x] UserActor handles `GetOrCreateUser` message (upsert on OAuth login)
+- [x] UserActor handles `GetUser` message (by ID)
+- [x] UserActor handles `LinkOAuthProvider` message (add provider to existing user)
+- [x] Registered via Servus.Akka DI integration
+- [x] Typecheck passes
 
 ### US-004: JWT issuance after OAuth callback
 **Description:** As an authenticated user, I need a JWT token after login so the frontend can authenticate API requests.
 
 **Acceptance Criteria:**
-- [ ] After successful OAuth callback, a JWT is issued
-- [ ] JWT contains user ID, display name, and email
-- [ ] JWT has configurable expiration (default 7 days)
-- [ ] JWT secret configurable via environment variables
-- [ ] Token returned to frontend (via cookie or redirect with token)
-- [ ] Typecheck passes
+- [x] After successful OAuth callback, a JWT is issued
+- [x] JWT contains user ID, display name, and email
+- [x] JWT has configurable expiration (default 7 days)
+- [x] JWT secret configurable via environment variables
+- [x] Token returned to frontend (via cookie or redirect with token)
+- [x] Typecheck passes
 
 ### US-005: Auth middleware for protected routes
 **Description:** As a developer, I need authentication middleware so certain API endpoints require a valid JWT.
 
 **Acceptance Criteria:**
-- [ ] Middleware validates JWT on protected endpoints
-- [ ] `GET /api/auth/me` returns current user info (name, email, avatar)
-- [ ] Group create/edit/delete endpoints require authentication
-- [ ] Group list and game endpoints remain publicly accessible
-- [ ] Returns 401 for missing/invalid tokens on protected routes
-- [ ] Typecheck passes
+- [x] Middleware validates JWT on protected endpoints
+- [x] `GET /api/auth/me` returns current user info (name, email, avatar)
+- [x] Group create/edit/delete endpoints require authentication
+- [x] Group list and game endpoints remain publicly accessible
+- [x] Returns 401 for missing/invalid tokens on protected routes
+- [x] Typecheck passes
 
 ### US-006: Login UI with OAuth buttons
 **Description:** As a user, I want a login page with "Sign in with GitHub" and "Sign in with Google" buttons so I can authenticate quickly.
 
 **Acceptance Criteria:**
-- [ ] Login page with two OAuth buttons (GitHub and Google)
-- [ ] No username/password fields (OAuth only)
-- [ ] Buttons initiate the OAuth redirect flow
-- [ ] After successful login, redirects back to the app
-- [ ] Matches the dark industrial aesthetic
-- [ ] Typecheck passes
+- [x] Login page with two OAuth buttons (GitHub and Google)
+- [x] No username/password fields (OAuth only)
+- [x] Buttons initiate the OAuth redirect flow
+- [x] After successful login, redirects back to the app
+- [x] Matches the dark industrial aesthetic
+- [x] Typecheck passes
 
 ### US-007: User avatar and name in header
 **Description:** As an authenticated user, I want to see my avatar and name in the app header so I know I'm logged in.
 
 **Acceptance Criteria:**
-- [ ] Header shows avatar image and display name when logged in
-- [ ] Shows "Sign In" button when not logged in
-- [ ] Dropdown menu with "My Groups" and "Sign Out" options
-- [ ] Sign out clears the JWT and returns to anonymous state
-- [ ] Typecheck passes
+- [x] Header shows avatar image and display name when logged in
+- [x] Shows "Sign In" button when not logged in
+- [x] Dropdown menu with "My Groups" and "Sign Out" options
+- [x] Sign out clears the JWT and returns to anonymous state
+- [x] Typecheck passes
 
 ### US-008: Group ownership
 **Description:** As an authenticated user, I want groups I create to be tied to my account so I can manage them from "My Groups."
 
 **Acceptance Criteria:**
-- [ ] `createdBy` field on groups is set to the current user's ID on creation
-- [ ] Only the group owner can edit or delete their groups
-- [ ] Non-owners see play button only (no edit/delete)
-- [ ] Seed data groups have no owner (community groups)
-- [ ] Typecheck passes
+- [x] `createdBy` field on groups is set to the current user's ID on creation
+- [x] Only the group owner can edit or delete their groups
+- [x] Non-owners see play button only (no edit/delete)
+- [x] Seed data groups have no owner (community groups)
+- [x] Typecheck passes
 
 ### US-009: Public/private group visibility
 **Description:** As a group owner, I want to set my group as public or private so I can control who can play it.
 
 **Acceptance Criteria:**
-- [ ] Toggle on group create/edit form: Public (default) or Private
-- [ ] Public groups visible to everyone in the group list
-- [ ] Private groups visible only to the owner and shared users
-- [ ] `GET /api/groups` filters based on visibility and current user
-- [ ] Anonymous users see only public groups
-- [ ] Typecheck passes
+- [x] Toggle on group create/edit form: Public (default) or Private
+- [x] Public groups visible to everyone in the group list
+- [x] Private groups visible only to the owner and shared users
+- [x] `GET /api/groups` filters based on visibility and current user
+- [x] Anonymous users see only public groups
+- [x] Typecheck passes
 
 ### US-010: Share private groups via invite link
 **Description:** As a group owner, I want to generate an invite link for my private group so I can share it with specific people.
 
 **Acceptance Criteria:**
-- [ ] "Share" button on private group generates a unique invite URL
-- [ ] Invite URL contains a token (e.g., `/groups/invite/{token}`)
-- [ ] Visiting the invite URL grants access to the private group
-- [ ] Shared users added to the group's `sharedWith` list
-- [ ] Owner can see who has access
-- [ ] Typecheck passes
+- [x] "Share" button on private group generates a unique invite URL
+- [x] Invite URL contains a token (e.g., `/groups/invite/{token}`)
+- [x] Visiting the invite URL grants access to the private group
+- [x] Shared users added to the group's `sharedWith` list
+- [x] Owner can see who has access
+- [x] Typecheck passes
 
 ### US-011: "My Groups" dashboard
 **Description:** As an authenticated user, I want a dashboard showing all groups I own or have access to.
 
 **Acceptance Criteria:**
-- [ ] Page at `/my-groups` (requires authentication)
-- [ ] Shows groups owned by the current user
-- [ ] Shows private groups shared with the current user
-- [ ] Edit/delete actions available for owned groups
-- [ ] Play action available for all listed groups
-- [ ] Typecheck passes
+- [x] Page at `/my-groups` (requires authentication)
+- [x] Shows groups owned by the current user
+- [x] Shows private groups shared with the current user
+- [x] Edit/delete actions available for owned groups
+- [x] Play action available for all listed groups
+- [x] Typecheck passes
 
 ## Functional Requirements
 
@@ -179,6 +179,36 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 - Private groups invisible to unauthorized users
 - Invite links work for sharing private groups
 - Anonymous users can still browse and play public groups
+
+## Phase 4 — UI/UX Improvements & Game Logic
+
+### US-012: Show private groups on the main page, remove "My Groups" page
+**Description:** As a user, I want to see all groups I have access to (public + my private + shared with me) on the main group list so I don't need a separate "My Groups" page.
+
+**Acceptance Criteria:**
+- [x] Main group list (`/groups`) shows public groups + private groups owned by or shared with the current user
+- [x] Remove the `/my-groups` route and `showMyGroupsPage` renderer
+- [x] Remove "Meine Gruppen" from the header dropdown menu
+- [x] Private groups are visually distinguished (e.g., "Privat" badge already exists)
+- [x] Typecheck passes
+
+### US-013: Public groups can only be edited by their owner
+**Description:** As a user, I want public groups to only be editable by their creator so community groups stay consistent.
+
+**Acceptance Criteria:**
+- [x] Edit and delete buttons only shown for groups where `createdBy` matches the current user
+- [x] Backend rejects edit/delete requests from non-owners (return 403)
+- [x] Seed data groups (no owner) cannot be edited or deleted by anyone
+- [x] Typecheck passes
+
+### US-014: Lock board after bingo
+**Description:** As a player, once I hit a bingo the board should lock so no more cells can be toggled until I start a new game or reset.
+
+**Acceptance Criteria:**
+- [x] After a bingo is detected, clicking cells has no effect
+- [x] The "Neues Spiel" and "Reset" buttons still work
+- [x] Visual feedback that the board is locked (e.g., cells appear non-interactive)
+- [x] Typecheck passes
 
 ## Open Questions
 

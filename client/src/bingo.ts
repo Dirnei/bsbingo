@@ -12,6 +12,7 @@ export interface BingoState {
   marked: Set<number>;
   bingoCount: number;
   bingoIndexes: Set<number>;
+  locked: boolean;
 }
 
 export function createBoardFromCells(cells: { index: number; text: string; isFreeSpace: boolean }[]): BingoState {
@@ -26,11 +27,13 @@ export function createBoardFromCells(cells: { index: number; text: string; isFre
     marked,
     bingoCount: 0,
     bingoIndexes: new Set(),
+    locked: false,
   };
 }
 
 export function toggleCell(state: BingoState, index: number): BingoState {
   if (index === FREE_INDEX) return state;
+  if (state.locked) return state;
 
   const marked = new Set(state.marked);
   if (marked.has(index)) {
@@ -41,7 +44,7 @@ export function toggleCell(state: BingoState, index: number): BingoState {
 
   const { bingoCount, bingoIndexes } = detectBingo(marked);
 
-  return { ...state, marked, bingoCount, bingoIndexes };
+  return { ...state, marked, bingoCount, bingoIndexes, locked: bingoCount > 0 };
 }
 
 export function resetMarks(state: BingoState): BingoState {
@@ -50,6 +53,7 @@ export function resetMarks(state: BingoState): BingoState {
     marked: new Set([FREE_INDEX]),
     bingoCount: 0,
     bingoIndexes: new Set(),
+    locked: false,
   };
 }
 

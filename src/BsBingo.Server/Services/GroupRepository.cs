@@ -41,6 +41,11 @@ public sealed class GroupRepository
         return result.MatchedCount > 0;
     }
 
+    public async Task<Group?> GetByInviteTokenAsync(string token)
+    {
+        return await _groups.Find(g => g.InviteToken == token).FirstOrDefaultAsync();
+    }
+
     public async Task<bool> DeleteAsync(string id)
     {
         var result = await _groups.DeleteOneAsync(g => g.Id == id);
