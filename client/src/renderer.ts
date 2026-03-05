@@ -1,5 +1,7 @@
 import type { BingoState } from './bingo.ts';
 import { isFreeSpace, getMarkedCount } from './bingo.ts';
+import { createWordEditor } from './word-editor.ts';
+import type { WordEditor } from './word-editor.ts';
 
 export interface RenderCallbacks {
   onCellClick: (index: number) => void;
@@ -16,11 +18,12 @@ let bannerEl: HTMLDivElement;
 let bannerSubEl: HTMLDivElement;
 let groupSelectorEl: HTMLDivElement;
 let gameViewEl: HTMLDivElement;
+let groupListAbortController: AbortController | null = null;
 
 export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): void {
   container.innerHTML = `
     <header>
-      <div class="badge">⚠ DiIT / Komax Group ⚠</div>
+      <div class="badge">⚠ LEBERKAS ORG EDITION ⚠</div>
       <h1>BULLSHIT<br><span>BINGO</span></h1>
       <div class="subtitle">// Smart Factory Edition · Klick auf ein Feld wenn du es hörst</div>
     </header>
@@ -46,6 +49,15 @@ export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): vo
     <footer>
       Dieses Spiel ist rein satirisch und dient der psychischen Selbstverteidigung.<br>
       Alle Buzzwords basieren auf wahren Begebenheiten. Keine Haftung für unkontrolliertes Augenrollen.
+      <div class="footer-links">
+        <a href="https://github.com/Dirnei/bsbingo" target="_blank" rel="noopener noreferrer" class="github-badge">
+          <img src="https://img.shields.io/github/stars/Dirnei/bsbingo?style=social" alt="GitHub">
+        </a>
+        <span class="footer-sep">·</span>
+        <a href="#/impressum">Impressum</a>
+        <span class="footer-sep">·</span>
+        <a href="#/datenschutz">Datenschutzerklärung</a>
+      </div>
     </footer>
   `;
 
@@ -71,13 +83,7 @@ export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): vo
     }
   });
 
-  // Delegate group card clicks
-  groupSelectorEl.addEventListener('click', (e) => {
-    const card = (e.target as HTMLElement).closest<HTMLElement>('.group-card');
-    if (!card) return;
-    const groupId = card.dataset.groupId;
-    if (groupId) callbacks.onGroupSelect(groupId);
-  });
+  // Group card clicks are handled by showGroupList's action buttons
 }
 
 export function renderBoard(state: BingoState): void {
@@ -159,6 +165,72 @@ export interface GroupDisplayInfo {
   wordCount: number;
 }
 
+export function showGroupList(
+  groups: GroupDisplayInfo[],
+  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void },
+): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+
+  if (groups.length === 0) {
+    groupSelectorEl.innerHTML = `
+      <div class="group-list-header">
+        <div class="group-selector-title">Wortgruppen</div>
+        <button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>
+      </div>
+      <div class="group-selector-status">Keine Wortgruppen gefunden.</div>
+    `;
+    groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')!.addEventListener('click', callbacks.onCreate);
+    return;
+  }
+
+  groupSelectorEl.innerHTML = `
+    <div class="group-list-header">
+      <div class="group-selector-title">Wortgruppen</div>
+      <button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>
+    </div>
+    <div class="group-cards">
+      ${groups.map(g => `
+        <div class="group-card" data-group-id="${escapeHtml(g.id)}">
+          <div class="group-card-name">${escapeHtml(g.name)}</div>
+          <div class="group-card-desc">${escapeHtml(g.description || 'Keine Beschreibung')}</div>
+          <div class="group-card-count">${g.wordCount} Wörter</div>
+          <div class="group-card-actions">
+            <button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>
+            <button class="group-action-btn group-action-edit" data-action="edit">✎ Bearbeiten</button>
+            <button class="group-action-btn group-action-delete" data-action="delete">✕ Löschen</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  // Abort previous listener to prevent accumulation
+  if (groupListAbortController) groupListAbortController.abort();
+  groupListAbortController = new AbortController();
+  const signal = groupListAbortController.signal;
+
+  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')!.addEventListener('click', callbacks.onCreate, { signal });
+
+  groupSelectorEl.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
+    if (!btn) return;
+    const card = btn.closest<HTMLElement>('.group-card');
+    if (!card) return;
+    const groupId = card.dataset.groupId;
+    if (!groupId) return;
+
+    const action = btn.dataset.action;
+    if (action === 'play') callbacks.onPlay(groupId);
+    else if (action === 'edit') callbacks.onEdit(groupId);
+    else if (action === 'delete') {
+      const name = card.querySelector('.group-card-name')?.textContent ?? '';
+      callbacks.onDelete(groupId, name);
+    }
+  }, { signal });
+}
+
+/** @deprecated Use showGroupList instead — kept for game flow compatibility */
 export function showGroupSelector(groups: GroupDisplayInfo[]): void {
   groupSelectorEl.classList.remove('hidden');
   gameViewEl.classList.add('hidden');
@@ -182,6 +254,223 @@ export function showGroupSelector(groups: GroupDisplayInfo[]): void {
       `).join('')}
     </div>
   `;
+}
+
+export function showDeleteConfirmDialog(
+  groupName: string,
+  onConfirm: () => void,
+  onCancel: () => void,
+): void {
+  const overlay = document.createElement('div');
+  overlay.className = 'dialog-overlay';
+  overlay.innerHTML = `
+    <div class="dialog">
+      <div class="dialog-title">Gruppe löschen</div>
+      <div class="dialog-message">
+        Bist du sicher, dass du <strong>${escapeHtml(groupName)}</strong> löschen möchtest?<br>
+        Dies kann nicht rückgängig gemacht werden.
+      </div>
+      <div class="dialog-actions">
+        <button class="dialog-btn-cancel" id="dialog-cancel">Abbrechen</button>
+        <button class="dialog-btn-confirm" id="dialog-confirm">Löschen</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const cleanup = () => {
+    overlay.remove();
+  };
+
+  overlay.querySelector('#dialog-cancel')!.addEventListener('click', () => {
+    cleanup();
+    onCancel();
+  });
+
+  overlay.querySelector('#dialog-confirm')!.addEventListener('click', () => {
+    cleanup();
+    onConfirm();
+  });
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      cleanup();
+      onCancel();
+    }
+  });
+}
+
+export interface GroupFormCallbacks {
+  onSubmit: (data: { name: string; description: string; words: string[] }) => Promise<void>;
+  onCancel: () => void;
+}
+
+export function showGroupCreateForm(callbacks: GroupFormCallbacks): void {
+  showGroupForm({ title: 'Neue Gruppe', callbacks });
+}
+
+export interface GroupEditFormOptions {
+  initialName: string;
+  initialDescription: string;
+  initialWords: string[];
+  callbacks: GroupFormCallbacks;
+}
+
+export function showGroupEditForm(options: GroupEditFormOptions): void {
+  showGroupForm({
+    title: 'Gruppe bearbeiten',
+    initialName: options.initialName,
+    initialDescription: options.initialDescription,
+    initialWords: options.initialWords,
+    callbacks: options.callbacks,
+  });
+}
+
+function showGroupForm(options: {
+  title: string;
+  initialName?: string;
+  initialDescription?: string;
+  initialWords?: string[];
+  callbacks: GroupFormCallbacks;
+}): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+
+  const { title, initialName = '', initialDescription = '', initialWords = [], callbacks } = options;
+  let submitting = false;
+  let wordEditor: WordEditor | null = null;
+
+  function render(): void {
+    groupSelectorEl.innerHTML = `
+      <div class="form-container">
+        <div class="form-header">
+          <div class="group-selector-title">${escapeHtml(title)}</div>
+          <button class="form-cancel-btn" id="form-cancel">← Zurück</button>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="group-name">Name *</label>
+          <input class="form-input" type="text" id="group-name" placeholder="z.B. Smart Factory Buzzwords" maxlength="100" />
+          <div class="form-error hidden" id="name-error"></div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="group-desc">Beschreibung</label>
+          <input class="form-input" type="text" id="group-desc" placeholder="Optionale Beschreibung" maxlength="200" />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Wörter</label>
+          <div id="word-editor-mount"></div>
+        </div>
+
+        <div class="form-error hidden" id="submit-error"></div>
+
+        <div class="form-actions">
+          <button id="form-cancel-btn">Abbrechen</button>
+          <button class="primary" id="form-submit" ${submitting ? 'disabled' : ''}>
+            ${submitting ? 'Speichern…' : '✓ Speichern'}
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Restore form values
+    const nameEl = groupSelectorEl.querySelector<HTMLInputElement>('#group-name')!;
+    const descEl = groupSelectorEl.querySelector<HTMLInputElement>('#group-desc')!;
+    nameEl.value = cachedName;
+    descEl.value = cachedDesc;
+
+    // Mount word editor
+    const mountPoint = groupSelectorEl.querySelector<HTMLDivElement>('#word-editor-mount')!;
+    const currentWords = wordEditor ? wordEditor.getWords() : initialWords;
+    wordEditor = createWordEditor({
+      container: mountPoint,
+      initialWords: currentWords,
+    });
+
+    attachFormEvents();
+  }
+
+  let cachedName = initialName;
+  let cachedDesc = initialDescription;
+
+  function attachFormEvents(): void {
+    // Cancel buttons
+    groupSelectorEl.querySelector('#form-cancel')!.addEventListener('click', callbacks.onCancel);
+    groupSelectorEl.querySelector('#form-cancel-btn')!.addEventListener('click', callbacks.onCancel);
+
+    // Submit
+    groupSelectorEl.querySelector('#form-submit')!.addEventListener('click', async () => {
+      const nameEl = groupSelectorEl.querySelector<HTMLInputElement>('#group-name')!;
+      const descEl = groupSelectorEl.querySelector<HTMLInputElement>('#group-desc')!;
+      const nameError = groupSelectorEl.querySelector<HTMLDivElement>('#name-error')!;
+      const submitError = groupSelectorEl.querySelector<HTMLDivElement>('#submit-error')!;
+
+      // Clear errors
+      nameError.classList.add('hidden');
+      submitError.classList.add('hidden');
+      wordEditor!.clearError();
+
+      const name = nameEl.value.trim();
+      const description = descEl.value.trim();
+
+      // Client-side validation
+      let valid = true;
+      if (!name) {
+        nameError.textContent = 'Name ist erforderlich';
+        nameError.classList.remove('hidden');
+        valid = false;
+      }
+      if (!wordEditor!.isValid()) {
+        wordEditor!.showError(`Mindestens 24 Wörter erforderlich (aktuell: ${wordEditor!.getCount()})`);
+        valid = false;
+      }
+      if (!valid) return;
+
+      submitting = true;
+      cachedName = name;
+      cachedDesc = description;
+      render();
+
+      try {
+        await callbacks.onSubmit({ name, description, words: wordEditor!.getWords() });
+      } catch (err) {
+        submitting = false;
+        cachedName = name;
+        cachedDesc = description;
+        render();
+        const submitErr = groupSelectorEl.querySelector<HTMLDivElement>('#submit-error')!;
+        submitErr.textContent = err instanceof Error ? err.message : 'Unbekannter Fehler';
+        submitErr.classList.remove('hidden');
+      }
+    });
+  }
+
+  render();
+}
+
+export function showToast(message: string): void {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  // Trigger reflow so the transition plays
+  toast.offsetWidth;
+  toast.classList.add('visible');
+
+  setTimeout(() => {
+    toast.classList.remove('visible');
+    toast.addEventListener('transitionend', () => toast.remove());
+  }, 2500);
+}
+
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 export function showGroupSelectorLoading(): void {
@@ -209,4 +498,17 @@ export function showGameView(onBackToGroups: () => void): void {
   const newBtn = btnGroups.cloneNode(true) as HTMLButtonElement;
   btnGroups.parentNode!.replaceChild(newBtn, btnGroups);
   newBtn.addEventListener('click', onBackToGroups);
+}
+
+export function showStaticPage(title: string, html: string, onBack: () => void): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+  groupSelectorEl.innerHTML = `
+    <div class="static-page">
+      <button class="back-link" id="btn-back">← Zurück</button>
+      <h2>${title}</h2>
+      <div class="static-page-content">${html}</div>
+    </div>
+  `;
+  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-back')!.addEventListener('click', onBack);
 }

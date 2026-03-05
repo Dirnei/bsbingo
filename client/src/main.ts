@@ -3,10 +3,13 @@ import { createBoardFromCells, toggleCell, resetMarks } from './bingo.ts';
 import type { BingoState } from './bingo.ts';
 import {
   mountApp, renderBoard, updateCell, showLoading, showError, clearStatus,
-  showGroupSelector, showGroupSelectorLoading, showGroupSelectorError, showGameView,
+  showGroupList, showGroupSelectorLoading, showGroupSelectorError, showGameView,
+  showDeleteConfirmDialog, showGroupCreateForm, showGroupEditForm, showToast,
+  showStaticPage,
 } from './renderer.ts';
 import type { GroupDisplayInfo } from './renderer.ts';
-import { fetchGroups, fetchBoard } from './api.ts';
+import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup } from './api.ts';
+import { registerRoutes, navigate, resolve } from './router.ts';
 
 let state: BingoState;
 let currentGroupId: string | null = null;
@@ -16,15 +19,43 @@ async function loadGroups(): Promise<void> {
   showGroupSelectorLoading();
   try {
     cachedGroups = await fetchGroups();
-    showGroupSelector(cachedGroups);
+    showGroupListWithActions();
   } catch (err) {
     showGroupSelectorError(`Fehler beim Laden: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
   }
 }
 
+function showGroupListWithActions(): void {
+  showGroupList(cachedGroups, {
+    onPlay: (id) => {
+      navigate(`/game/${id}`);
+    },
+    onEdit: (id) => {
+      navigate(`/groups/${id}/edit`);
+    },
+    onDelete: (id, name) => {
+      showDeleteConfirmDialog(name, async () => {
+        try {
+          await deleteGroup(id);
+          cachedGroups = cachedGroups.filter(g => g.id !== id);
+          showGroupListWithActions();
+          showToast(`„${name}" wurde gelöscht`);
+        } catch (err) {
+          showGroupSelectorError(`Fehler beim Löschen: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
+        }
+      }, () => {
+        // cancelled — do nothing
+      });
+    },
+    onCreate: () => {
+      navigate('/groups/new');
+    },
+  });
+}
+
 async function startGame(groupId: string): Promise<void> {
   currentGroupId = groupId;
-  showGameView(loadGroups);
+  showGameView(() => navigate('/groups'));
   showLoading();
 
   try {
@@ -39,7 +70,7 @@ async function startGame(groupId: string): Promise<void> {
 
 async function newGame(): Promise<void> {
   if (!currentGroupId) {
-    await loadGroups();
+    navigate('/groups');
     return;
   }
   await startGame(currentGroupId);
@@ -61,4 +92,111 @@ function onReset(): void {
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 mountApp(app, { onCellClick, onNewGame: newGame, onReset, onGroupSelect });
-loadGroups();
+
+registerRoutes([
+  {
+    pattern: '/groups',
+    handler: () => loadGroups(),
+  },
+  {
+    pattern: '/groups/new',
+    handler: () => {
+      showGroupCreateForm({
+        onSubmit: async (data) => {
+          await createGroup({ name: data.name, description: data.description, words: data.words });
+          cachedGroups = await fetchGroups();
+          navigate('/groups');
+        },
+        onCancel: () => navigate('/groups'),
+      });
+    },
+  },
+  {
+    pattern: '/groups/:id/edit',
+    handler: async (params) => {
+      showGroupSelectorLoading();
+      try {
+        const group = await fetchGroup(params.id);
+        showGroupEditForm({
+          initialName: group.name,
+          initialDescription: group.description ?? '',
+          initialWords: group.words,
+          callbacks: {
+            onSubmit: async (data) => {
+              await updateGroup(params.id, { name: data.name, description: data.description, words: data.words });
+              cachedGroups = await fetchGroups();
+              navigate('/groups');
+            },
+            onCancel: () => navigate('/groups'),
+          },
+        });
+      } catch (err) {
+        if (err instanceof Error && err.message === 'Gruppe nicht gefunden') {
+          showGroupSelectorError('Gruppe nicht gefunden (404)');
+        } else {
+          showGroupSelectorError(`Fehler beim Laden: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
+        }
+      }
+    },
+  },
+  {
+    pattern: '/game/:id',
+    handler: (params) => {
+      startGame(params.id);
+    },
+  },
+  {
+    pattern: '/impressum',
+    handler: () => {
+      showStaticPage('Impressum', `
+        <p><strong>Angaben gemäß § 5 TMG</strong></p>
+        <p>
+          Max Mustermann<br>
+          Musterstraße 1<br>
+          12345 Musterstadt
+        </p>
+        <p><strong>Kontakt</strong></p>
+        <p>
+          E-Mail: max@example.com
+        </p>
+        <p><strong>Haftungsausschluss</strong></p>
+        <p>
+          Dieses Projekt ist ein satirisches Spaßprojekt. Die Inhalte wurden mit Sorgfalt erstellt,
+          jedoch wird keine Gewähr für Richtigkeit, Vollständigkeit und Aktualität übernommen.
+        </p>
+      `, () => navigate('/groups'));
+    },
+  },
+  {
+    pattern: '/datenschutz',
+    handler: () => {
+      showStaticPage('Datenschutzerklärung', `
+        <p><strong>1. Datenschutz auf einen Blick</strong></p>
+        <p>
+          Diese Website erhebt und speichert grundsätzlich keine personenbezogenen Daten.
+          Es werden keine Cookies gesetzt und kein Tracking eingesetzt.
+        </p>
+        <p><strong>2. Hosting</strong></p>
+        <p>
+          Die Website wird extern gehostet. Die Serverlogfiles können IP-Adressen,
+          Browsertyp, Betriebssystem, Referrer-URL, Zeitpunkt des Zugriffs und die abgerufene Seite enthalten.
+          Die Erfassung dieser Daten erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO.
+        </p>
+        <p><strong>3. Keine Cookies</strong></p>
+        <p>
+          Diese Website verwendet keine Cookies.
+        </p>
+        <p><strong>4. Keine Analyse-Tools</strong></p>
+        <p>
+          Es werden keine Analyse- oder Tracking-Tools eingesetzt.
+        </p>
+        <p><strong>5. Kontakt</strong></p>
+        <p>
+          Bei Fragen zum Datenschutz wenden Sie sich bitte an die im Impressum genannte Person.
+        </p>
+      `, () => navigate('/groups'));
+    },
+  },
+]);
+
+resolve();
