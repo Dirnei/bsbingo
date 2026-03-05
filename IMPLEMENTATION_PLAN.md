@@ -40,11 +40,11 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As a developer, I need a UserActor to manage user state and OAuth identity linking through the actor system.
 
 **Acceptance Criteria:**
-- [ ] UserActor handles `GetOrCreateUser` message (upsert on OAuth login)
-- [ ] UserActor handles `GetUser` message (by ID)
-- [ ] UserActor handles `LinkOAuthProvider` message (add provider to existing user)
-- [ ] Registered via Servus.Akka DI integration
-- [ ] Typecheck passes
+- [x] UserActor handles `GetOrCreateUser` message (upsert on OAuth login)
+- [x] UserActor handles `GetUser` message (by ID)
+- [x] UserActor handles `LinkOAuthProvider` message (add provider to existing user)
+- [x] Registered via Servus.Akka DI integration
+- [x] Typecheck passes
 
 ### US-004: JWT issuance after OAuth callback
 **Description:** As an authenticated user, I need a JWT token after login so the frontend can authenticate API requests.
