@@ -141,6 +141,7 @@ export function updateHeaderAuth(user: UserInfo | null, callbacks: HeaderAuthCal
 
 export function renderBoard(state: BingoState): void {
   boardEl.innerHTML = '';
+  boardEl.classList.toggle('locked', state.locked);
 
   for (let i = 0; i < state.board.length; i++) {
     const phrase = state.board[i];
@@ -169,6 +170,8 @@ export function renderBoard(state: BingoState): void {
 }
 
 export function updateCell(state: BingoState, index: number): void {
+  boardEl.classList.toggle('locked', state.locked);
+
   const cell = boardEl.querySelector<HTMLElement>(`[data-index="${index}"]`);
   if (!cell) return;
   cell.classList.toggle('marked', state.marked.has(index));

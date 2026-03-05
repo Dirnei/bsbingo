@@ -205,10 +205,10 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As a player, once I hit a bingo the board should lock so no more cells can be toggled until I start a new game or reset.
 
 **Acceptance Criteria:**
-- [ ] After a bingo is detected, clicking cells has no effect
-- [ ] The "Neues Spiel" and "Reset" buttons still work
-- [ ] Visual feedback that the board is locked (e.g., cells appear non-interactive)
-- [ ] Typecheck passes
+- [x] After a bingo is detected, clicking cells has no effect
+- [x] The "Neues Spiel" and "Reset" buttons still work
+- [x] Visual feedback that the board is locked (e.g., cells appear non-interactive)
+- [x] Typecheck passes
 
 ## Open Questions
 

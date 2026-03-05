@@ -326,6 +326,27 @@ button.primary:hover {
   color: var(--win) !important;
 }
 
+.board.locked .cell:not(.bingo-line):not(.free) {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.board.locked .cell:not(.bingo-line):not(.free):hover {
+  border-color: var(--border);
+}
+
+.board.locked .cell:not(.bingo-line):not(.free):hover .cell-text {
+  color: var(--text-dim);
+}
+
+.board.locked .cell.bingo-line {
+  cursor: default;
+}
+
+.board.locked .cell.free {
+  opacity: 0.5;
+}
+
 @keyframes pulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.04); }
