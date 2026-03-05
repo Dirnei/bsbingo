@@ -501,6 +501,16 @@ button.primary:hover {
   text-transform: uppercase;
 }
 
+.group-card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
 /* Group List Header */
 .group-list-header {
   display: flex;

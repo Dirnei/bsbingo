@@ -220,6 +220,7 @@ export interface GroupDisplayInfo {
   description: string;
   wordCount: number;
   createdBy: string | null;
+  createdByName: string | null;
   visibility: string;
   inviteToken: string | null;
   sharedWith: string[] | null;
@@ -257,7 +258,10 @@ export function showGroupList(
         <div class="group-card" data-group-id="${escapeHtml(g.id)}">
           <div class="group-card-name">${escapeHtml(g.name)}${g.visibility === 'private' ? ' <span class="visibility-badge visibility-private">Privat</span>' : ''}</div>
           <div class="group-card-desc">${escapeHtml(g.description || 'Keine Beschreibung')}</div>
-          <div class="group-card-count">${g.wordCount} Wörter</div>
+          <div class="group-card-meta">
+            <span>${g.wordCount} Wörter</span>
+            <span>${g.createdByName ? escapeHtml(g.createdByName) : 'Kein Besitzer'}</span>
+          </div>
           <div class="group-card-actions">
             <button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>
             ${isOwner && g.visibility === 'private' ? `<button class="group-action-btn group-action-share" data-action="share">🔗 Teilen</button>` : ''}

@@ -205,21 +205,32 @@ app.MapGet("/api/auth/me", (ClaimsPrincipal user) =>
 
     return Results.Ok(new
     {
-        Id = user.FindFirstValue(JwtRegisteredClaimNames.Sub),
+        Id = user.FindFirstValue(ClaimTypes.NameIdentifier),
         Name = user.FindFirstValue("name"),
-        Email = user.FindFirstValue(JwtRegisteredClaimNames.Email),
+        Email = user.FindFirstValue(ClaimTypes.Email),
         Avatar = user.FindFirstValue("avatar"),
         Provider = user.FindFirstValue("provider")
     });
 }).RequireAuthorization();
 
 // GET /api/groups — list all groups (id, name, description, word count, createdBy, visibility)
-app.MapGet("/api/groups", async (ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
+app.MapGet("/api/groups", async (ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor, UserRepository userRepository) =>
 {
     var userId = user.Identity?.IsAuthenticated == true
-        ? user.FindFirstValue(JwtRegisteredClaimNames.Sub)
+        ? user.FindFirstValue(ClaimTypes.NameIdentifier)
         : null;
     var groups = await groupActor.ActorRef.Ask<List<Group>>(new GetAllGroups(userId), askTimeout);
+
+    // Resolve owner display names
+    var ownerIds = groups.Select(g => g.CreatedBy).Where(id => id is not null).Distinct().ToList();
+    var ownerNames = new Dictionary<string, string>();
+    foreach (var ownerId in ownerIds)
+    {
+        var owner = await userRepository.GetByIdAsync(ownerId!);
+        if (owner is not null)
+            ownerNames[ownerId!] = owner.DisplayName;
+    }
+
     return Results.Ok(groups.Select(g => new
     {
         g.Id,
@@ -227,6 +238,7 @@ app.MapGet("/api/groups", async (ClaimsPrincipal user, IRequiredActor<GroupActor
         g.Description,
         WordCount = g.Words.Count,
         g.CreatedBy,
+        CreatedByName = g.CreatedBy is not null && ownerNames.TryGetValue(g.CreatedBy, out var name) ? name : null,
         g.Visibility,
         InviteToken = (userId is not null && g.CreatedBy == userId) ? g.InviteToken : null,
         SharedWith = (userId is not null && g.CreatedBy == userId) ? g.SharedWith : null
@@ -243,7 +255,7 @@ app.MapGet("/api/groups/{id}", async (string id, IRequiredActor<GroupActor> grou
 // POST /api/groups — create a new group
 app.MapPost("/api/groups", async (CreateGroupRequest request, ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
 {
-    var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+    var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
     var result = await groupActor.ActorRef.Ask<GroupResult>(
         new CreateGroup(request.Name, request.Description, request.Words, userId, request.Visibility ?? "public"), askTimeout);
 
@@ -265,7 +277,7 @@ app.MapPost("/api/groups", async (CreateGroupRequest request, ClaimsPrincipal us
 // PUT /api/groups/{id} — update an existing group
 app.MapPut("/api/groups/{id}", async (string id, UpdateGroupRequest request, ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
 {
-    var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+    var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
     var result = await groupActor.ActorRef.Ask<GroupResult>(
         new UpdateGroup(id, request.Name, request.Description, request.Words, userId, request.Visibility ?? "public"), askTimeout);
 
@@ -285,7 +297,7 @@ app.MapPut("/api/groups/{id}", async (string id, UpdateGroupRequest request, Cla
 // DELETE /api/groups/{id} — delete a group
 app.MapDelete("/api/groups/{id}", async (string id, ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
 {
-    var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+    var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
     var result = await groupActor.ActorRef.Ask<GroupResult>(
         new DeleteGroup(id, userId), askTimeout);
 
@@ -305,7 +317,7 @@ app.MapDelete("/api/groups/{id}", async (string id, ClaimsPrincipal user, IRequi
 // POST /api/groups/{id}/invite — generate an invite link for a private group (owner only)
 app.MapPost("/api/groups/{id}/invite", async (string id, ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
 {
-    var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+    var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
     var result = await groupActor.ActorRef.Ask<GroupResult>(
         new GenerateInviteLink(id, userId!), askTimeout);
 
@@ -335,7 +347,7 @@ app.MapGet("/api/invite/{token}", async (string token, IRequiredActor<GroupActor
 // POST /api/invite/{token}/accept — accept an invite and join the group
 app.MapPost("/api/invite/{token}/accept", async (string token, ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
 {
-    var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+    var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
     var result = await groupActor.ActorRef.Ask<GroupResult>(
         new AcceptInvite(token, userId!), askTimeout);
 
@@ -349,7 +361,7 @@ app.MapPost("/api/invite/{token}/accept", async (string token, ClaimsPrincipal u
 // GET /api/groups/{id}/shared — list users who have access to a group (owner only)
 app.MapGet("/api/groups/{id}/shared", async (string id, ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
 {
-    var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+    var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
     var result = await groupActor.ActorRef.Ask<GroupResult>(
         new GetSharedUsers(id, userId!), askTimeout);
 

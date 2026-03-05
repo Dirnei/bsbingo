@@ -4,6 +4,7 @@ export interface GroupSummary {
   description: string;
   wordCount: number;
   createdBy: string | null;
+  createdByName: string | null;
   visibility: string;
   inviteToken: string | null;
   sharedWith: string[] | null;

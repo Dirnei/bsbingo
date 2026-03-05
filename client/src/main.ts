@@ -287,6 +287,5 @@ registerRoutes([
   },
 ]);
 
-// Load current user on startup (non-blocking for route resolution)
-loadCurrentUser();
-resolve();
+// Load current user before resolving routes so currentUser.id is available
+loadCurrentUser().then(() => resolve());
