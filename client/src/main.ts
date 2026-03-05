@@ -123,7 +123,7 @@ registerRoutes([
     handler: () => {
       showGroupCreateForm({
         onSubmit: async (data) => {
-          await createGroup({ name: data.name, description: data.description, words: data.words });
+          await createGroup({ name: data.name, description: data.description, words: data.words, visibility: data.visibility });
           cachedGroups = await fetchGroups();
           navigate('/groups');
         },
@@ -141,9 +141,10 @@ registerRoutes([
           initialName: group.name,
           initialDescription: group.description ?? '',
           initialWords: group.words,
+          initialVisibility: group.visibility ?? 'public',
           callbacks: {
             onSubmit: async (data) => {
-              await updateGroup(params.id, { name: data.name, description: data.description, words: data.words });
+              await updateGroup(params.id, { name: data.name, description: data.description, words: data.words, visibility: data.visibility });
               cachedGroups = await fetchGroups();
               navigate('/groups');
             },

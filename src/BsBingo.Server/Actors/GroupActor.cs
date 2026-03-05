@@ -9,10 +9,13 @@ public sealed class GroupActor : ReceiveActor
 {
     public GroupActor(GroupRepository repository)
     {
-        ReceiveAsync<GetAllGroups>(async _ =>
+        ReceiveAsync<GetAllGroups>(async msg =>
         {
             var groups = await repository.GetAllAsync();
-            Sender.Tell(groups);
+            var filtered = groups.Where(g =>
+                g.Visibility == "public" || (msg.UserId is not null && g.CreatedBy == msg.UserId)
+            ).ToList();
+            Sender.Tell(filtered);
         });
 
         ReceiveAsync<GetGroupById>(async msg =>
@@ -30,7 +33,8 @@ public sealed class GroupActor : ReceiveActor
                     Name = msg.Name,
                     Description = msg.Description,
                     Words = msg.Words,
-                    CreatedBy = msg.UserId
+                    CreatedBy = msg.UserId,
+                    Visibility = msg.Visibility is "public" or "private" ? msg.Visibility : "public"
                 };
                 await repository.InsertAsync(group);
                 Sender.Tell(new GroupResult(true, Data: group));
@@ -61,6 +65,7 @@ public sealed class GroupActor : ReceiveActor
                 existing.Name = msg.Name;
                 existing.Description = msg.Description;
                 existing.Words = msg.Words;
+                existing.Visibility = msg.Visibility is "public" or "private" ? msg.Visibility : existing.Visibility;
                 await repository.UpdateAsync(existing);
                 Sender.Tell(new GroupResult(true, Data: existing));
             }

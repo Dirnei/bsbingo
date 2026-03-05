@@ -958,3 +958,55 @@ footer {
   text-align: left;
   margin-bottom: 24px;
 }
+
+/* Visibility toggle */
+.visibility-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.visibility-option {
+  padding: 6px 16px;
+  background: transparent;
+  color: var(--text-dim);
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.visibility-option:not(:last-child) {
+  border-right: 1px solid var(--border);
+}
+
+.visibility-option.active {
+  background: var(--accent);
+  color: #000;
+  font-weight: 600;
+}
+
+.visibility-option:hover:not(.active) {
+  background: rgba(255,255,255,0.05);
+}
+
+/* Visibility badge on group cards */
+.visibility-badge {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.visibility-private {
+  background: rgba(245, 130, 10, 0.2);
+  color: var(--accent);
+  border: 1px solid rgba(245, 130, 10, 0.3);
+}

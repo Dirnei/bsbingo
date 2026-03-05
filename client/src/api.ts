@@ -4,6 +4,7 @@ export interface GroupSummary {
   description: string;
   wordCount: number;
   createdBy: string | null;
+  visibility: string;
 }
 
 export interface BoardCell {
@@ -67,7 +68,10 @@ export function getLoginUrl(provider: 'github' | 'google'): string {
 }
 
 export async function fetchGroups(): Promise<GroupSummary[]> {
-  const res = await fetch(`${BASE_URL}/groups`);
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${BASE_URL}/groups`, { headers });
   if (!res.ok) throw new Error(`Failed to fetch groups: ${res.status}`);
   return res.json();
 }
@@ -84,6 +88,7 @@ export interface CreateGroupRequest {
   name: string;
   description: string;
   words: string[];
+  visibility?: string;
 }
 
 export interface ApiError {
@@ -111,6 +116,7 @@ export interface GroupDetail {
   name: string;
   description: string | null;
   words: string[];
+  visibility: string;
 }
 
 export async function fetchGroup(groupId: string): Promise<GroupDetail> {

@@ -224,6 +224,7 @@ export interface GroupDisplayInfo {
   description: string;
   wordCount: number;
   createdBy: string | null;
+  visibility: string;
 }
 
 export function showGroupList(
@@ -256,7 +257,7 @@ export function showGroupList(
         const isOwner = !!currentUserId && g.createdBy === currentUserId;
         return `
         <div class="group-card" data-group-id="${escapeHtml(g.id)}">
-          <div class="group-card-name">${escapeHtml(g.name)}</div>
+          <div class="group-card-name">${escapeHtml(g.name)}${g.visibility === 'private' ? ' <span class="visibility-badge visibility-private">Privat</span>' : ''}</div>
           <div class="group-card-desc">${escapeHtml(g.description || 'Keine Beschreibung')}</div>
           <div class="group-card-count">${g.wordCount} Wörter</div>
           <div class="group-card-actions">
@@ -367,7 +368,7 @@ export function showDeleteConfirmDialog(
 }
 
 export interface GroupFormCallbacks {
-  onSubmit: (data: { name: string; description: string; words: string[] }) => Promise<void>;
+  onSubmit: (data: { name: string; description: string; words: string[]; visibility: string }) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -379,6 +380,7 @@ export interface GroupEditFormOptions {
   initialName: string;
   initialDescription: string;
   initialWords: string[];
+  initialVisibility?: string;
   callbacks: GroupFormCallbacks;
 }
 
@@ -388,6 +390,7 @@ export function showGroupEditForm(options: GroupEditFormOptions): void {
     initialName: options.initialName,
     initialDescription: options.initialDescription,
     initialWords: options.initialWords,
+    initialVisibility: options.initialVisibility,
     callbacks: options.callbacks,
   });
 }
@@ -397,12 +400,13 @@ function showGroupForm(options: {
   initialName?: string;
   initialDescription?: string;
   initialWords?: string[];
+  initialVisibility?: string;
   callbacks: GroupFormCallbacks;
 }): void {
   groupSelectorEl.classList.remove('hidden');
   gameViewEl.classList.add('hidden');
 
-  const { title, initialName = '', initialDescription = '', initialWords = [], callbacks } = options;
+  const { title, initialName = '', initialDescription = '', initialWords = [], initialVisibility = 'public', callbacks } = options;
   let submitting = false;
   let wordEditor: WordEditor | null = null;
 
@@ -423,6 +427,14 @@ function showGroupForm(options: {
         <div class="form-field">
           <label class="form-label" for="group-desc">Beschreibung</label>
           <input class="form-input" type="text" id="group-desc" placeholder="Optionale Beschreibung" maxlength="200" />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Sichtbarkeit</label>
+          <div class="visibility-toggle" id="visibility-toggle">
+            <button type="button" class="visibility-option ${cachedVisibility === 'public' ? 'active' : ''}" data-visibility="public">Öffentlich</button>
+            <button type="button" class="visibility-option ${cachedVisibility === 'private' ? 'active' : ''}" data-visibility="private">Privat</button>
+          </div>
         </div>
 
         <div class="form-field">
@@ -460,11 +472,21 @@ function showGroupForm(options: {
 
   let cachedName = initialName;
   let cachedDesc = initialDescription;
+  let cachedVisibility = initialVisibility;
 
   function attachFormEvents(): void {
     // Cancel buttons
     groupSelectorEl.querySelector('#form-cancel')!.addEventListener('click', callbacks.onCancel);
     groupSelectorEl.querySelector('#form-cancel-btn')!.addEventListener('click', callbacks.onCancel);
+
+    // Visibility toggle
+    groupSelectorEl.querySelector('#visibility-toggle')!.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-visibility]');
+      if (!btn) return;
+      cachedVisibility = btn.dataset.visibility!;
+      groupSelectorEl.querySelectorAll('.visibility-option').forEach(el => el.classList.remove('active'));
+      btn.classList.add('active');
+    });
 
     // Submit
     groupSelectorEl.querySelector('#form-submit')!.addEventListener('click', async () => {
@@ -500,7 +522,7 @@ function showGroupForm(options: {
       render();
 
       try {
-        await callbacks.onSubmit({ name, description, words: wordEditor!.getWords() });
+        await callbacks.onSubmit({ name, description, words: wordEditor!.getWords(), visibility: cachedVisibility });
       } catch (err) {
         submitting = false;
         cachedName = name;

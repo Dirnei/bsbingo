@@ -194,17 +194,21 @@ app.MapGet("/api/auth/me", (ClaimsPrincipal user) =>
     });
 }).RequireAuthorization();
 
-// GET /api/groups — list all groups (id, name, description, word count, createdBy)
-app.MapGet("/api/groups", async (IRequiredActor<GroupActor> groupActor) =>
+// GET /api/groups — list all groups (id, name, description, word count, createdBy, visibility)
+app.MapGet("/api/groups", async (ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
 {
-    var groups = await groupActor.ActorRef.Ask<List<Group>>(new GetAllGroups(), askTimeout);
+    var userId = user.Identity?.IsAuthenticated == true
+        ? user.FindFirstValue(JwtRegisteredClaimNames.Sub)
+        : null;
+    var groups = await groupActor.ActorRef.Ask<List<Group>>(new GetAllGroups(userId), askTimeout);
     return Results.Ok(groups.Select(g => new
     {
         g.Id,
         g.Name,
         g.Description,
         WordCount = g.Words.Count,
-        g.CreatedBy
+        g.CreatedBy,
+        g.Visibility
     }));
 });
 
@@ -220,7 +224,7 @@ app.MapPost("/api/groups", async (CreateGroupRequest request, ClaimsPrincipal us
 {
     var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
     var result = await groupActor.ActorRef.Ask<GroupResult>(
-        new CreateGroup(request.Name, request.Description, request.Words, userId), askTimeout);
+        new CreateGroup(request.Name, request.Description, request.Words, userId, request.Visibility ?? "public"), askTimeout);
 
     if (!result.Success)
         return Results.BadRequest(new { error = result.Error });
@@ -232,7 +236,8 @@ app.MapPost("/api/groups", async (CreateGroupRequest request, ClaimsPrincipal us
         group.Name,
         group.Description,
         WordCount = group.Words.Count,
-        group.CreatedBy
+        group.CreatedBy,
+        group.Visibility
     });
 }).RequireAuthorization();
 
@@ -241,7 +246,7 @@ app.MapPut("/api/groups/{id}", async (string id, UpdateGroupRequest request, Cla
 {
     var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
     var result = await groupActor.ActorRef.Ask<GroupResult>(
-        new UpdateGroup(id, request.Name, request.Description, request.Words, userId), askTimeout);
+        new UpdateGroup(id, request.Name, request.Description, request.Words, userId, request.Visibility ?? "public"), askTimeout);
 
     if (!result.Success)
     {
@@ -286,5 +291,5 @@ app.MapPost("/api/game/new", async (string groupId, IRequiredActor<GameActor> ga
 app.Run();
 
 // Request DTOs
-public sealed record CreateGroupRequest(string Name, string? Description, List<string> Words);
-public sealed record UpdateGroupRequest(string Name, string? Description, List<string> Words);
+public sealed record CreateGroupRequest(string Name, string? Description, List<string> Words, string? Visibility = "public");
+public sealed record UpdateGroupRequest(string Name, string? Description, List<string> Words, string? Visibility = "public");

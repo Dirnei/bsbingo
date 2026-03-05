@@ -103,12 +103,12 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As a group owner, I want to set my group as public or private so I can control who can play it.
 
 **Acceptance Criteria:**
-- [ ] Toggle on group create/edit form: Public (default) or Private
-- [ ] Public groups visible to everyone in the group list
-- [ ] Private groups visible only to the owner and shared users
-- [ ] `GET /api/groups` filters based on visibility and current user
-- [ ] Anonymous users see only public groups
-- [ ] Typecheck passes
+- [x] Toggle on group create/edit form: Public (default) or Private
+- [x] Public groups visible to everyone in the group list
+- [x] Private groups visible only to the owner and shared users
+- [x] `GET /api/groups` filters based on visibility and current user
+- [x] Anonymous users see only public groups
+- [x] Typecheck passes
 
 ### US-010: Share private groups via invite link
 **Description:** As a group owner, I want to generate an invite link for my private group so I can share it with specific people.
