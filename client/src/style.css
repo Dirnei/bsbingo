@@ -31,6 +31,128 @@ body {
 header {
   text-align: center;
   margin-bottom: 28px;
+  width: 100%;
+  max-width: 720px;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 12px;
+}
+
+/* Header User Menu */
+.header-user-menu {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.header-signin-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.header-signin-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.header-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: none;
+}
+
+.header-user-btn:hover {
+  border-color: var(--accent);
+}
+
+.header-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.header-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--muted);
+  color: var(--bg);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.header-username {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-caret {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.header-dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  min-width: 160px;
+  z-index: 100;
+}
+
+.header-dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.header-dropdown-item:hover {
+  background: var(--hit-bg);
+  color: var(--text);
+  border: none;
+}
+
+.header-dropdown-signout:hover {
+  color: #ff4444;
 }
 
 .badge {
@@ -42,7 +164,6 @@ header {
   border: 1px solid var(--accent);
   padding: 3px 10px;
   display: inline-block;
-  margin-bottom: 12px;
 }
 
 h1 {

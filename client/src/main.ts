@@ -5,15 +5,35 @@ import {
   mountApp, renderBoard, updateCell, showLoading, showError, clearStatus,
   showGroupList, showGroupSelectorLoading, showGroupSelectorError, showGameView,
   showDeleteConfirmDialog, showGroupCreateForm, showGroupEditForm, showToast,
-  showStaticPage, showLoginPage,
+  showStaticPage, showLoginPage, updateHeaderAuth,
 } from './renderer.ts';
 import type { GroupDisplayInfo } from './renderer.ts';
-import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken } from './api.ts';
+import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe } from './api.ts';
+import type { UserInfo } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
 
 let state: BingoState;
 let currentGroupId: string | null = null;
 let cachedGroups: GroupDisplayInfo[] = [];
+let currentUser: UserInfo | null = null;
+
+function refreshHeaderAuth(): void {
+  updateHeaderAuth(currentUser, {
+    onSignIn: () => navigate('/login'),
+    onSignOut: () => {
+      clearToken();
+      currentUser = null;
+      refreshHeaderAuth();
+      navigate('/groups');
+    },
+    onMyGroups: () => navigate('/my-groups'),
+  });
+}
+
+async function loadCurrentUser(): Promise<void> {
+  currentUser = await fetchMe();
+  refreshHeaderAuth();
+}
 
 async function loadGroups(): Promise<void> {
   showGroupSelectorLoading();
@@ -157,7 +177,7 @@ registerRoutes([
   },
   {
     pattern: '/auth/callback',
-    handler: () => {
+    handler: async () => {
       // Extract token from query string (the backend redirects to /#/auth/callback?token=...)
       const hashPart = window.location.hash.slice(1); // remove #
       const qIndex = hashPart.indexOf('?');
@@ -166,7 +186,7 @@ registerRoutes([
         const token = params.get('token');
         if (token) {
           setToken(token);
-          // Clean the URL and redirect to groups
+          await loadCurrentUser();
           navigate('/groups');
           return;
         }
@@ -228,4 +248,6 @@ registerRoutes([
   },
 ]);
 
+// Load current user on startup (non-blocking for route resolution)
+loadCurrentUser();
 resolve();

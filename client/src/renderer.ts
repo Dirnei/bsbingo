@@ -2,6 +2,7 @@ import type { BingoState } from './bingo.ts';
 import { isFreeSpace, getMarkedCount } from './bingo.ts';
 import { createWordEditor } from './word-editor.ts';
 import type { WordEditor } from './word-editor.ts';
+import type { UserInfo } from './api.ts';
 
 export interface RenderCallbacks {
   onCellClick: (index: number) => void;
@@ -18,12 +19,16 @@ let bannerEl: HTMLDivElement;
 let bannerSubEl: HTMLDivElement;
 let groupSelectorEl: HTMLDivElement;
 let gameViewEl: HTMLDivElement;
+let headerUserMenuEl: HTMLDivElement;
 let groupListAbortController: AbortController | null = null;
 
 export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): void {
   container.innerHTML = `
     <header>
-      <div class="badge">⚠ LEBERKAS ORG EDITION ⚠</div>
+      <div class="header-top">
+        <div class="badge">⚠ LEBERKAS ORG EDITION ⚠</div>
+        <div class="header-user-menu" id="header-user-menu"></div>
+      </div>
       <h1>BULLSHIT<br><span>BINGO</span></h1>
       <div class="subtitle">// Smart Factory Edition · Klick auf ein Feld wenn du es hörst</div>
     </header>
@@ -61,6 +66,7 @@ export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): vo
     </footer>
   `;
 
+  headerUserMenuEl = container.querySelector<HTMLDivElement>('#header-user-menu')!;
   groupSelectorEl = container.querySelector<HTMLDivElement>('#group-selector')!;
   gameViewEl = container.querySelector<HTMLDivElement>('#game-view')!;
   boardEl = container.querySelector<HTMLDivElement>('#board')!;
@@ -84,6 +90,60 @@ export function mountApp(container: HTMLElement, callbacks: RenderCallbacks): vo
   });
 
   // Group card clicks are handled by showGroupList's action buttons
+}
+
+export interface HeaderAuthCallbacks {
+  onSignIn: () => void;
+  onSignOut: () => void;
+  onMyGroups: () => void;
+}
+
+export function updateHeaderAuth(user: UserInfo | null, callbacks: HeaderAuthCallbacks): void {
+  if (!user) {
+    headerUserMenuEl.innerHTML = `
+      <button class="header-signin-btn" id="header-signin">Sign In</button>
+    `;
+    headerUserMenuEl.querySelector<HTMLButtonElement>('#header-signin')!.addEventListener('click', callbacks.onSignIn);
+    return;
+  }
+
+  const avatarHtml = user.avatar
+    ? `<img class="header-avatar" src="${escapeHtml(user.avatar)}" alt="" />`
+    : `<div class="header-avatar header-avatar-placeholder">${escapeHtml(user.name.charAt(0).toUpperCase())}</div>`;
+
+  headerUserMenuEl.innerHTML = `
+    <button class="header-user-btn" id="header-user-btn">
+      ${avatarHtml}
+      <span class="header-username">${escapeHtml(user.name)}</span>
+      <span class="header-caret">▾</span>
+    </button>
+    <div class="header-dropdown hidden" id="header-dropdown">
+      <button class="header-dropdown-item" id="header-my-groups">Meine Gruppen</button>
+      <button class="header-dropdown-item header-dropdown-signout" id="header-signout">Abmelden</button>
+    </div>
+  `;
+
+  const userBtn = headerUserMenuEl.querySelector<HTMLButtonElement>('#header-user-btn')!;
+  const dropdown = headerUserMenuEl.querySelector<HTMLDivElement>('#header-dropdown')!;
+
+  userBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click', () => {
+    dropdown.classList.add('hidden');
+  }, { once: false });
+
+  headerUserMenuEl.querySelector<HTMLButtonElement>('#header-my-groups')!.addEventListener('click', () => {
+    dropdown.classList.add('hidden');
+    callbacks.onMyGroups();
+  });
+
+  headerUserMenuEl.querySelector<HTMLButtonElement>('#header-signout')!.addEventListener('click', () => {
+    dropdown.classList.add('hidden');
+    callbacks.onSignOut();
+  });
 }
 
 export function renderBoard(state: BingoState): void {

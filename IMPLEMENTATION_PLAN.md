@@ -83,11 +83,11 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As an authenticated user, I want to see my avatar and name in the app header so I know I'm logged in.
 
 **Acceptance Criteria:**
-- [ ] Header shows avatar image and display name when logged in
-- [ ] Shows "Sign In" button when not logged in
-- [ ] Dropdown menu with "My Groups" and "Sign Out" options
-- [ ] Sign out clears the JWT and returns to anonymous state
-- [ ] Typecheck passes
+- [x] Header shows avatar image and display name when logged in
+- [x] Shows "Sign In" button when not logged in
+- [x] Dropdown menu with "My Groups" and "Sign Out" options
+- [x] Sign out clears the JWT and returns to anonymous state
+- [x] Typecheck passes
 
 ### US-008: Group ownership
 **Description:** As an authenticated user, I want groups I create to be tied to my account so I can manage them from "My Groups."
