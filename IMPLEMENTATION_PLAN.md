@@ -236,8 +236,8 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As a user, I want the group list sorted so that popular (most-starred) groups appear first.
 
 **Acceptance Criteria:**
-- [ ] Groups sorted by star count descending by default
-- [ ] Groups with equal stars maintain stable secondary sort (e.g., by name)
+- [x] Groups sorted by star count descending by default
+- [x] Groups with equal stars maintain stable secondary sort (e.g., by name)
 - [ ] Typecheck passes
 
 ### US-018: Pointer cursor only on interactive elements

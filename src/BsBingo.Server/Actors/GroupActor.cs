@@ -16,7 +16,10 @@ public sealed class GroupActor : ReceiveActor
                 g.Visibility == "public"
                 || (msg.UserId is not null && g.CreatedBy == msg.UserId)
                 || (msg.UserId is not null && g.SharedWith.Contains(msg.UserId))
-            ).ToList();
+            )
+            .OrderByDescending(g => g.StarredBy.Count)
+            .ThenBy(g => g.Name)
+            .ToList();
             Sender.Tell(filtered);
         });
 
