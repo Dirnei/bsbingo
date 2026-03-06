@@ -31,16 +31,16 @@ Add real-time multiplayer support so players in the same lobby see each other's 
 **Description:** As a developer, I need a LobbyActor (one per lobby) that manages lobby state, player boards, and game lifecycle.
 
 **Acceptance Criteria:**
-- [ ] LobbyActor holds: lobby code, group ID, player list, each player's board and marked cells
-- [ ] Handles `JoinLobby` message — adds player, generates their unique board, broadcasts player joined
-- [ ] Handles `LeaveLobby` message — removes player, broadcasts player left
-- [ ] Handles `StartGame` message (host only) — broadcasts game start to all players
-- [ ] Handles `MarkCell` message — records mark, broadcasts progress update
-- [ ] Handles `RestartGame` message (host only) — regenerates all boards, resets marks, broadcasts restart
-- [ ] Validates bingo claims server-side using the same 12-line detection logic
-- [ ] Broadcasts `PlayerBingo` when a player completes a line
-- [ ] Self-destructs after configurable inactivity period (Akka ReceiveTimeout)
-- [ ] Typecheck passes
+- [x] LobbyActor holds: lobby code, group ID, player list, each player's board and marked cells
+- [x] Handles `JoinLobby` message — adds player, generates their unique board, broadcasts player joined
+- [x] Handles `LeaveLobby` message — removes player, broadcasts player left
+- [x] Handles `StartGame` message (host only) — broadcasts game start to all players
+- [x] Handles `MarkCell` message — records mark, broadcasts progress update
+- [x] Handles `RestartGame` message (host only) — regenerates all boards, resets marks, broadcasts restart
+- [x] Validates bingo claims server-side using the same 12-line detection logic
+- [x] Broadcasts `PlayerBingo` when a player completes a line
+- [x] Self-destructs after configurable inactivity period (Akka ReceiveTimeout)
+- [x] Typecheck passes
 
 ### US-003: Implement PlayerSessionActor
 **Description:** As a developer, I need a PlayerSessionActor (one per WebSocket connection) that bridges WebSocket messages to/from the LobbyActor.

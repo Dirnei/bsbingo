@@ -1,5 +1,6 @@
 using Akka.Actor;
 using BsBingo.Server.Messages;
+using BsBingo.Server.Services;
 
 namespace BsBingo.Server.Actors;
 
@@ -9,13 +10,21 @@ public sealed class LobbyManagerActor : ReceiveActor
     private static readonly char[] CodeChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".ToCharArray();
     private const int CodeLength = 6;
     private const int MaxCodeAttempts = 100;
+    private static readonly TimeSpan DefaultInactivityTimeout = TimeSpan.FromMinutes(30);
 
     private readonly Dictionary<string, IActorRef> _lobbies = new();
 
-    public LobbyManagerActor()
+    public LobbyManagerActor(GroupRepository groupRepository)
     {
-        Receive<CreateLobby>(msg =>
+        ReceiveAsync<CreateLobby>(async msg =>
         {
+            var group = await groupRepository.GetByIdAsync(msg.GroupId);
+            if (group is null)
+            {
+                Sender.Tell(new LobbyNotFound("GROUP_NOT_FOUND"));
+                return;
+            }
+
             var code = GenerateUniqueCode();
             if (code is null)
             {
@@ -23,9 +32,8 @@ public sealed class LobbyManagerActor : ReceiveActor
                 return;
             }
 
-            // Create a child LobbyActor (stub — will be implemented in US-002)
             var lobbyActor = Context.ActorOf(
-                Props.Create(() => new LobbyStubActor()),
+                Props.Create(() => new LobbyActor(code, msg.GroupId, group.Words, DefaultInactivityTimeout)),
                 $"lobby-{code}");
 
             Context.Watch(lobbyActor);
@@ -72,16 +80,5 @@ public sealed class LobbyManagerActor : ReceiveActor
         }
 
         return null;
-    }
-}
-
-/// <summary>
-/// Temporary stub actor for lobby children. Will be replaced by the real LobbyActor in US-002.
-/// </summary>
-internal sealed class LobbyStubActor : ReceiveActor
-{
-    public LobbyStubActor()
-    {
-        ReceiveAny(_ => { });
     }
 }
