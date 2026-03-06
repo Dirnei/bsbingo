@@ -51,7 +51,7 @@ public sealed class LobbyActor : ReceiveActor
         {
             var board = GenerateBoard();
             var markedCells = new HashSet<int> { FreeIndex };
-            _players[msg.PlayerId] = new PlayerState(msg.PlayerId, msg.DisplayName, msg.PlayerSession, board, markedCells, 0);
+            _players[msg.PlayerId] = new PlayerState(msg.PlayerId, msg.DisplayName, msg.PlayerSession, board, markedCells, 0, new HashSet<int>());
 
             if (_hostPlayerId is null)
                 _hostPlayerId = msg.PlayerId;
@@ -125,12 +125,22 @@ public sealed class LobbyActor : ReceiveActor
         var markedCount = player.MarkedCells.Count - 1;
         Broadcast(new ProgressUpdate(msg.PlayerId, markedCount));
 
-        // Check for bingo
-        var winningLine = DetectNewBingo(player.MarkedCells);
-        if (winningLine is not null)
+        // Check all 12 lines for newly completed bingos and lines that became incomplete
+        var newBingos = new List<(int LineIndex, int[] Line)>();
+        for (var i = 0; i < Lines.Length; i++)
         {
-            _players[msg.PlayerId] = player with { BingoCount = player.BingoCount + 1 };
-            Broadcast(new PlayerBingo(msg.PlayerId, player.DisplayName, winningLine));
+            var isComplete = Lines[i].All(idx => player.MarkedCells.Contains(idx));
+            if (isComplete && player.CompletedLines.Add(i))
+                newBingos.Add((i, Lines[i]));
+            else if (!isComplete)
+                player.CompletedLines.Remove(i);
+        }
+
+        // Broadcast each new bingo
+        foreach (var (_, line) in newBingos)
+        {
+            _players[msg.PlayerId] = _players[msg.PlayerId] with { BingoCount = _players[msg.PlayerId].BingoCount + 1 };
+            Broadcast(new PlayerBingo(msg.PlayerId, player.DisplayName, line.ToList()));
         }
     }
 
@@ -152,7 +162,8 @@ public sealed class LobbyActor : ReceiveActor
             {
                 Board = newBoard,
                 MarkedCells = new HashSet<int> { FreeIndex },
-                BingoCount = 0
+                BingoCount = 0,
+                CompletedLines = new HashSet<int>()
             };
         }
 
@@ -197,17 +208,6 @@ public sealed class LobbyActor : ReceiveActor
         return cells;
     }
 
-    private static List<int>? DetectNewBingo(HashSet<int> marked)
-    {
-        foreach (var line in Lines)
-        {
-            if (line.All(i => marked.Contains(i)))
-                return line.ToList();
-        }
-
-        return null;
-    }
-
     private List<LobbyPlayerInfo> GetPlayerInfoList()
     {
         return _players.Values.Select(p => new LobbyPlayerInfo(
@@ -240,5 +240,6 @@ public sealed class LobbyActor : ReceiveActor
         IActorRef Session,
         List<BoardCell> Board,
         HashSet<int> MarkedCells,
-        int BingoCount);
+        int BingoCount,
+        HashSet<int> CompletedLines);
 }

@@ -118,11 +118,11 @@ Add real-time multiplayer support so players in the same lobby see each other's 
 **Description:** As a system, I need to validate bingo claims on the server so players can't cheat.
 
 **Acceptance Criteria:**
-- [ ] Server checks all 12 lines (5 rows, 5 columns, 2 diagonals) after each mark
-- [ ] Bingo detected automatically — no client claim needed
-- [ ] Broadcasts `player:bingo` with winner's name and winning line
-- [ ] Game continues after first BINGO (track multiple bingos)
-- [ ] Typecheck passes
+- [x] Server checks all 12 lines (5 rows, 5 columns, 2 diagonals) after each mark
+- [x] Bingo detected automatically — no client claim needed
+- [x] Broadcasts `player:bingo` with winner's name and winning line
+- [x] Game continues after first BINGO (track multiple bingos)
+- [x] Typecheck passes
 
 ### US-010: BINGO notification and winner display
 **Description:** As a player, I want to see a prominent notification when any player achieves BINGO so the game has an exciting climax.
