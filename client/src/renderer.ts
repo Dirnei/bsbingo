@@ -231,7 +231,7 @@ export interface GroupDisplayInfo {
 
 export function showGroupList(
   groups: GroupDisplayInfo[],
-  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void; onShare?: (id: string) => void; onStar?: (id: string) => void },
+  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void; onShare?: (id: string) => void; onStar?: (id: string) => void; onMultiplayer?: (id: string) => void },
   currentUserId?: string | null,
 ): void {
   groupSelectorEl.classList.remove('hidden');
@@ -274,6 +274,7 @@ export function showGroupList(
         </div>
         <div class="group-card-actions">
           <button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>
+          ${g.wordCount >= 24 ? `<button class="group-action-btn group-action-multiplayer" data-action="multiplayer">👥 Multiplayer</button>` : ''}
           ${isOwner && g.visibility === 'private' ? `<button class="group-action-btn group-action-share" data-action="share">🔗 Teilen</button>` : ''}
           ${isOwner ? `<button class="group-action-btn group-action-edit" data-action="edit">✎ Bearbeiten</button>` : ''}
           ${isOwner ? `<button class="group-action-btn group-action-delete" data-action="delete">✕ Löschen</button>` : ''}
@@ -324,6 +325,7 @@ export function showGroupList(
 
     const action = btn.dataset.action;
     if (action === 'play') callbacks.onPlay(groupId);
+    else if (action === 'multiplayer' && callbacks.onMultiplayer) callbacks.onMultiplayer(groupId);
     else if (action === 'star' && callbacks.onStar) callbacks.onStar(groupId);
     else if (action === 'share' && callbacks.onShare) callbacks.onShare(groupId);
     else if (action === 'edit') callbacks.onEdit(groupId);
@@ -719,6 +721,53 @@ export function showShareDialog(inviteUrl: string, onClose: () => void): void {
 
   overlay.querySelector('#dialog-close')!.addEventListener('click', () => { cleanup(); onClose(); });
   overlay.addEventListener('click', (e) => { if (e.target === overlay) { cleanup(); onClose(); } });
+}
+
+export function showLobbyWaitingRoom(
+  lobbyCode: string,
+  groupName: string,
+  callbacks: { onBack: () => void },
+): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+
+  const shareUrl = `${window.location.origin}/#/lobby/${encodeURIComponent(lobbyCode)}`;
+
+  groupSelectorEl.innerHTML = `
+    <div class="lobby-waiting-room">
+      <button class="back-link" id="btn-back">← Zurück</button>
+      <div class="lobby-waiting-title">Lobby erstellt</div>
+      <div class="lobby-waiting-subtitle">${escapeHtml(groupName)}</div>
+      <div class="lobby-code-card">
+        <div class="lobby-code-label">Lobby-Code</div>
+        <div class="lobby-code-value" id="lobby-code">${escapeHtml(lobbyCode)}</div>
+        <div class="lobby-code-actions">
+          <button class="lobby-copy-btn" id="btn-copy-code">Code kopieren</button>
+          <button class="lobby-copy-btn" id="btn-copy-link">Link kopieren</button>
+        </div>
+        <div class="lobby-copied hidden" id="lobby-copied">Kopiert!</div>
+      </div>
+      <div class="lobby-waiting-hint">
+        Teile den Code mit anderen Spielern, damit sie beitreten können.
+      </div>
+    </div>
+  `;
+
+  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-back')!.addEventListener('click', callbacks.onBack);
+
+  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-copy-code')!.addEventListener('click', () => {
+    navigator.clipboard.writeText(lobbyCode).then(() => showCopiedFeedback());
+  });
+
+  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-copy-link')!.addEventListener('click', () => {
+    navigator.clipboard.writeText(shareUrl).then(() => showCopiedFeedback());
+  });
+
+  function showCopiedFeedback(): void {
+    const el = groupSelectorEl.querySelector<HTMLDivElement>('#lobby-copied')!;
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.add('hidden'), 2000);
+  }
 }
 
 export function showStaticPage(title: string, html: string, onBack: () => void): void {

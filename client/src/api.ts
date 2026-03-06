@@ -247,3 +247,16 @@ export async function unstarGroup(groupId: string): Promise<{ starCount: number 
   if (!res.ok) throw new Error(`Failed to unstar group: ${res.status}`);
   return res.json();
 }
+
+export async function createLobby(groupId: string, hostDisplayName: string): Promise<{ lobbyCode: string }> {
+  const res = await fetch(`${BASE_URL}/lobbies`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ groupId, hostDisplayName }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` })) as ApiError;
+    throw new Error(body.error || `Failed to create lobby: ${res.status}`);
+  }
+  return res.json();
+}

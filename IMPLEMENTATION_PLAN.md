@@ -67,12 +67,12 @@ Add real-time multiplayer support so players in the same lobby see each other's 
 **Description:** As a host, I want to create a multiplayer lobby by selecting a word group so I can invite others to play.
 
 **Acceptance Criteria:**
-- [ ] "Create Lobby" button on the group selector / game page
-- [ ] Host selects a word group for the lobby
-- [ ] API creates the lobby and returns the lobby code
-- [ ] Host sees a waiting room with the lobby code prominently displayed
-- [ ] Lobby code is copyable / shareable
-- [ ] Typecheck passes
+- [x] "Create Lobby" button on the group selector / game page
+- [x] Host selects a word group for the lobby
+- [x] API creates the lobby and returns the lobby code
+- [x] Host sees a waiting room with the lobby code prominently displayed
+- [x] Lobby code is copyable / shareable
+- [x] Typecheck passes
 
 ### US-006: Join lobby UI
 **Description:** As a player, I want to join a lobby by entering a code so I can play with others.

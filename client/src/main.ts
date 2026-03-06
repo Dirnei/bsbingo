@@ -6,9 +6,10 @@ import {
   showGroupList, showGroupSelectorLoading, showGroupSelectorError, showGameView,
   showDeleteConfirmDialog, showGroupCreateForm, showGroupEditForm, showToast,
   showStaticPage, showLoginPage, updateHeaderAuth, showInvitePage, showShareDialog,
+  showLobbyWaitingRoom,
 } from './renderer.ts';
 import type { GroupDisplayInfo } from './renderer.ts';
-import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn, starGroup, unstarGroup } from './api.ts';
+import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn, starGroup, unstarGroup, createLobby } from './api.ts';
 import type { UserInfo } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
 
@@ -16,6 +17,7 @@ let state: BingoState;
 let currentGroupId: string | null = null;
 let cachedGroups: GroupDisplayInfo[] = [];
 let currentUser: UserInfo | null = null;
+let lobbyGroupName: string | null = null;
 
 function refreshHeaderAuth(): void {
   updateHeaderAuth(currentUser, {
@@ -79,6 +81,19 @@ function showGroupListWithActions(): void {
         });
       } catch (err) {
         showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen des Einladungslinks');
+      }
+    },
+    onMultiplayer: async (id) => {
+      const displayName = currentUser?.name ?? 'Anonym';
+      const group = cachedGroups.find(g => g.id === id);
+      lobbyGroupName = group?.name ?? null;
+      try {
+        showGroupSelectorLoading();
+        const result = await createLobby(id, displayName);
+        navigate(`/lobby/${result.lobbyCode}`);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen der Lobby');
+        showGroupListWithActions();
       }
     },
     onStar: async (id) => {
@@ -193,6 +208,14 @@ registerRoutes([
     pattern: '/game/:id',
     handler: (params) => {
       startGame(params.id);
+    },
+  },
+  {
+    pattern: '/lobby/:code',
+    handler: (params) => {
+      showLobbyWaitingRoom(params.code, lobbyGroupName ?? 'Multiplayer Lobby', {
+        onBack: () => navigate('/groups'),
+      });
     },
   },
   {
