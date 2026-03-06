@@ -78,12 +78,12 @@ Add real-time multiplayer support so players in the same lobby see each other's 
 **Description:** As a player, I want to join a lobby by entering a code so I can play with others.
 
 **Acceptance Criteria:**
-- [ ] "Join Lobby" input field on the home page
-- [ ] Player enters the 6-character lobby code
-- [ ] Player enters a display name
-- [ ] On join, WebSocket connection established and player added to lobby
-- [ ] Error message if lobby code is invalid or lobby is full/expired
-- [ ] Typecheck passes
+- [x] "Join Lobby" input field on the home page
+- [x] Player enters the 6-character lobby code
+- [x] Player enters a display name
+- [x] On join, WebSocket connection established and player added to lobby
+- [x] Error message if lobby code is invalid or lobby is full/expired
+- [x] Typecheck passes
 
 ### US-007: Lobby waiting room and player list
 **Description:** As a player in a lobby, I want to see who else is in the lobby while waiting for the game to start.

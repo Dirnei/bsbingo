@@ -229,9 +229,46 @@ export interface GroupDisplayInfo {
   isStarred: boolean;
 }
 
+function bindJoinLobbyListeners(container: HTMLElement, onJoinLobby?: (code: string, displayName: string) => void): void {
+  const joinBtn = container.querySelector<HTMLButtonElement>('#btn-join-lobby');
+  const joinCodeInput = container.querySelector<HTMLInputElement>('#lobby-join-code');
+  const joinNameInput = container.querySelector<HTMLInputElement>('#lobby-join-name');
+  const joinError = container.querySelector<HTMLDivElement>('#lobby-join-error');
+
+  joinCodeInput?.addEventListener('input', () => {
+    joinCodeInput.value = joinCodeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  });
+
+  function attemptJoinLobby(): void {
+    if (!joinCodeInput || !joinNameInput || !joinError || !onJoinLobby) return;
+
+    const code = joinCodeInput.value.trim().toUpperCase();
+    const displayName = joinNameInput.value.trim();
+
+    joinError.classList.add('hidden');
+
+    if (!code || code.length < 4) {
+      joinError.textContent = 'Bitte gib einen gültigen Lobby-Code ein.';
+      joinError.classList.remove('hidden');
+      return;
+    }
+    if (!displayName) {
+      joinError.textContent = 'Bitte gib deinen Namen ein.';
+      joinError.classList.remove('hidden');
+      return;
+    }
+
+    onJoinLobby(code, displayName);
+  }
+
+  joinBtn?.addEventListener('click', attemptJoinLobby);
+  joinCodeInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptJoinLobby(); });
+  joinNameInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptJoinLobby(); });
+}
+
 export function showGroupList(
   groups: GroupDisplayInfo[],
-  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void; onShare?: (id: string) => void; onStar?: (id: string) => void; onMultiplayer?: (id: string) => void },
+  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void; onShare?: (id: string) => void; onStar?: (id: string) => void; onMultiplayer?: (id: string) => void; onJoinLobby?: (code: string, displayName: string) => void },
   currentUserId?: string | null,
 ): void {
   groupSelectorEl.classList.remove('hidden');
@@ -243,9 +280,19 @@ export function showGroupList(
         <div class="group-selector-title">Wortgruppen</div>
         ${currentUserId ? '<button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>' : ''}
       </div>
+      <div class="lobby-join-card">
+        <div class="lobby-join-title">Lobby beitreten</div>
+        <div class="lobby-join-form">
+          <input class="lobby-join-input" type="text" id="lobby-join-code" placeholder="Lobby-Code (z.B. ABCD12)" maxlength="6" autocomplete="off" />
+          <input class="lobby-join-input" type="text" id="lobby-join-name" placeholder="Dein Name" maxlength="30" autocomplete="off" />
+          <button class="lobby-join-btn" id="btn-join-lobby">Beitreten</button>
+        </div>
+        <div class="lobby-join-error hidden" id="lobby-join-error"></div>
+      </div>
       <div class="group-selector-status">Keine Wortgruppen gefunden.</div>
     `;
     groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')?.addEventListener('click', callbacks.onCreate);
+    bindJoinLobbyListeners(groupSelectorEl, callbacks.onJoinLobby);
     return;
   }
 
@@ -289,6 +336,15 @@ export function showGroupList(
       <div class="group-selector-title">Wortgruppen</div>
       ${currentUserId ? '<button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>' : ''}
     </div>
+    <div class="lobby-join-card">
+      <div class="lobby-join-title">Lobby beitreten</div>
+      <div class="lobby-join-form">
+        <input class="lobby-join-input" type="text" id="lobby-join-code" placeholder="Lobby-Code (z.B. ABCD12)" maxlength="6" autocomplete="off" />
+        <input class="lobby-join-input" type="text" id="lobby-join-name" placeholder="Dein Name" maxlength="30" autocomplete="off" />
+        <button class="lobby-join-btn" id="btn-join-lobby">Beitreten</button>
+      </div>
+      <div class="lobby-join-error hidden" id="lobby-join-error"></div>
+    </div>
     ${builtinGroups.length > 0 ? `
       <div class="group-cards">
         ${builtinGroups.map(g => renderCard(g, false)).join('')}
@@ -314,6 +370,8 @@ export function showGroupList(
   const signal = groupListAbortController.signal;
 
   groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')?.addEventListener('click', callbacks.onCreate, { signal });
+
+  bindJoinLobbyListeners(groupSelectorEl, callbacks.onJoinLobby);
 
   groupSelectorEl.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');

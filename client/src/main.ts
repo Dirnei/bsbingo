@@ -18,6 +18,8 @@ let currentGroupId: string | null = null;
 let cachedGroups: GroupDisplayInfo[] = [];
 let currentUser: UserInfo | null = null;
 let lobbyGroupName: string | null = null;
+let lobbyDisplayName: string | null = null;
+let lobbyWebSocket: WebSocket | null = null;
 
 function refreshHeaderAuth(): void {
   updateHeaderAuth(currentUser, {
@@ -96,6 +98,10 @@ function showGroupListWithActions(): void {
         showGroupListWithActions();
       }
     },
+    onJoinLobby: (code, displayName) => {
+      lobbyDisplayName = displayName;
+      navigate(`/lobby/${code}`);
+    },
     onStar: async (id) => {
       const group = cachedGroups.find(g => g.id === id);
       if (!group) return;
@@ -148,6 +154,50 @@ function onCellClick(index: number): void {
 function onReset(): void {
   state = resetMarks(state);
   renderBoard(state);
+}
+
+function closeLobbyWebSocket(): void {
+  if (lobbyWebSocket) {
+    lobbyWebSocket.close();
+    lobbyWebSocket = null;
+  }
+}
+
+function connectToLobby(code: string, displayName: string): void {
+  closeLobbyWebSocket();
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${window.location.host}/ws/lobby?code=${encodeURIComponent(code)}`;
+
+  const ws = new WebSocket(wsUrl);
+  lobbyWebSocket = ws;
+
+  ws.addEventListener('open', () => {
+    ws.send(JSON.stringify({ type: 'lobby:join', payload: { displayName } }));
+  });
+
+  ws.addEventListener('message', (event) => {
+    try {
+      const msg = JSON.parse(event.data) as { type: string; payload?: Record<string, unknown> };
+      if (msg.type === 'error') {
+        const errorMsg = (msg.payload?.message as string) ?? 'Unbekannter Fehler';
+        showToast(errorMsg);
+      }
+      // Additional message handling will be added in US-007/US-008
+    } catch {
+      // Ignore malformed messages
+    }
+  });
+
+  ws.addEventListener('close', () => {
+    lobbyWebSocket = null;
+  });
+
+  ws.addEventListener('error', () => {
+    showToast('Verbindung zur Lobby fehlgeschlagen. Code ungültig oder Lobby abgelaufen.');
+    lobbyWebSocket = null;
+    navigate('/groups');
+  });
 }
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -213,9 +263,17 @@ registerRoutes([
   {
     pattern: '/lobby/:code',
     handler: (params) => {
-      showLobbyWaitingRoom(params.code, lobbyGroupName ?? 'Multiplayer Lobby', {
-        onBack: () => navigate('/groups'),
+      const code = params.code.toUpperCase();
+      const displayName = lobbyDisplayName ?? currentUser?.name ?? 'Anonym';
+
+      showLobbyWaitingRoom(code, lobbyGroupName ?? 'Multiplayer Lobby', {
+        onBack: () => {
+          closeLobbyWebSocket();
+          navigate('/groups');
+        },
       });
+
+      connectToLobby(code, displayName);
     },
   },
   {
