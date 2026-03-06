@@ -46,12 +46,12 @@ Add real-time multiplayer support so players in the same lobby see each other's 
 **Description:** As a developer, I need a PlayerSessionActor (one per WebSocket connection) that bridges WebSocket messages to/from the LobbyActor.
 
 **Acceptance Criteria:**
-- [ ] PlayerSessionActor created for each WebSocket connection
-- [ ] Forwards client messages (join, mark cell) to the LobbyActor
-- [ ] Forwards LobbyActor broadcasts (player joined, progress, bingo) to the WebSocket client
-- [ ] Handles WebSocket disconnect — notifies LobbyActor of player departure
-- [ ] Serializes/deserializes messages to/from JSON for WebSocket transport
-- [ ] Typecheck passes
+- [x] PlayerSessionActor created for each WebSocket connection
+- [x] Forwards client messages (join, mark cell) to the LobbyActor
+- [x] Forwards LobbyActor broadcasts (player joined, progress, bingo) to the WebSocket client
+- [x] Handles WebSocket disconnect — notifies LobbyActor of player departure
+- [x] Serializes/deserializes messages to/from JSON for WebSocket transport
+- [x] Typecheck passes
 
 ### US-004: WebSocket endpoint
 **Description:** As a frontend developer, I need a WebSocket endpoint so the client can establish a real-time connection to a lobby.
