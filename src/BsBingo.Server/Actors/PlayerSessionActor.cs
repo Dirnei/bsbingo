@@ -41,6 +41,7 @@ public sealed class PlayerSessionActor : ReceiveActor
         Receive<PlayerBingo>(msg => SendToWebSocket("player:bingo", msg));
         Receive<GameRestarted>(_ => SendToWebSocket("game:restart", new { }));
         Receive<LobbyExpired>(_ => SendToWebSocket("lobby:expired", new { }));
+        Receive<LobbyClosed>(_ => SendToWebSocket("lobby:closed", new { }));
         Receive<LobbyError>(msg => SendToWebSocket("error", msg));
 
         // WebSocket closed

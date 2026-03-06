@@ -37,6 +37,7 @@ public sealed record ProgressUpdate(string PlayerId, int MarkedCount);
 public sealed record PlayerBingo(string PlayerId, string DisplayName, List<int> WinningLine);
 public sealed record GameRestarted;
 public sealed record LobbyExpired;
+public sealed record LobbyClosed;
 
 // Errors
 public sealed record LobbyError(string Message);

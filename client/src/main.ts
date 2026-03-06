@@ -6,7 +6,7 @@ import {
   showGroupList, showGroupSelectorLoading, showGroupSelectorError, showGameView,
   showDeleteConfirmDialog, showGroupCreateForm, showGroupEditForm, showToast,
   showStaticPage, showLoginPage, updateHeaderAuth, showInvitePage, showShareDialog,
-  showLobbyWaitingRoom, updateLobbyPlayerList,
+  showLobbyWaitingRoom, updateLobbyPlayerList, showNamePrompt,
   showMultiplayerGameView, renderMultiplayerBoard, updateMultiplayerCell,
   updateMultiplayerPlayers, showMultiplayerBingoNotification,
 } from './renderer.ts';
@@ -95,12 +95,28 @@ function showGroupListWithActions(): void {
       }
     },
     onMultiplayer: async (id) => {
-      const displayName = currentUser?.name ?? 'Anonym';
       const group = cachedGroups.find(g => g.id === id);
       lobbyGroupName = group?.name ?? null;
+
+      if (!currentUser) {
+        // Anonymous user — need a name before creating lobby
+        showNamePrompt(async (name) => {
+          lobbyDisplayName = name;
+          try {
+            showGroupSelectorLoading();
+            const result = await createLobby(id, name);
+            navigate(`/lobby/${result.lobbyCode}`);
+          } catch (err) {
+            showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen der Lobby');
+            showGroupListWithActions();
+          }
+        }, () => showGroupListWithActions());
+        return;
+      }
+
       try {
         showGroupSelectorLoading();
-        const result = await createLobby(id, displayName);
+        const result = await createLobby(id, currentUser.name);
         navigate(`/lobby/${result.lobbyCode}`);
       } catch (err) {
         showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen der Lobby');
@@ -125,7 +141,7 @@ function showGroupListWithActions(): void {
         showToast(err instanceof Error ? err.message : 'Fehler');
       }
     },
-  }, currentUser?.id);
+  }, currentUser?.id, currentUser?.name);
 }
 
 async function startGame(groupId: string): Promise<void> {
@@ -310,6 +326,12 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       navigate('/groups');
       break;
     }
+    case 'lobby:closed': {
+      showToast('Der Host hat die Lobby geschlossen.');
+      closeLobbyWebSocket();
+      navigate('/groups');
+      break;
+    }
     case 'error': {
       const errorMsg = (msg.payload?.message as string) ?? 'Unbekannter Fehler';
       showToast(errorMsg);
@@ -417,17 +439,27 @@ registerRoutes([
     handler: (params) => {
       const code = params.code.toUpperCase();
       lobbyCode = code;
-      const displayName = lobbyDisplayName ?? currentUser?.name ?? 'Anonym';
+      const displayName = lobbyDisplayName ?? currentUser?.name;
 
-      showLobbyWaitingRoom(code, lobbyGroupName ?? 'Multiplayer Lobby', {
-        onBack: () => {
-          closeLobbyWebSocket();
-          navigate('/groups');
-        },
-        onStartGame: () => sendLobbyMessage('game:start'),
-      });
+      function enterLobby(name: string): void {
+        showLobbyWaitingRoom(code, lobbyGroupName ?? 'Multiplayer Lobby', {
+          onBack: () => {
+            closeLobbyWebSocket();
+            navigate('/groups');
+          },
+          onStartGame: () => sendLobbyMessage('game:start'),
+        });
+        connectToLobby(code, name);
+      }
 
-      connectToLobby(code, displayName);
+      if (displayName) {
+        enterLobby(displayName);
+      } else {
+        showNamePrompt(
+          (name) => { lobbyDisplayName = name; enterLobby(name); },
+          () => navigate('/groups'),
+        );
+      }
     },
   },
   {

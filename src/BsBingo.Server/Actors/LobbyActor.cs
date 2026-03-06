@@ -49,6 +49,13 @@ public sealed class LobbyActor : ReceiveActor
         }
         else
         {
+            // Reject duplicate display names
+            if (_players.Values.Any(p => string.Equals(p.DisplayName, msg.DisplayName, StringComparison.OrdinalIgnoreCase)))
+            {
+                msg.PlayerSession.Tell(new LobbyError($"Der Name \"{msg.DisplayName}\" ist bereits vergeben"));
+                return;
+            }
+
             var board = GenerateBoard();
             var markedCells = new HashSet<int> { FreeIndex };
             _players[msg.PlayerId] = new PlayerState(msg.PlayerId, msg.DisplayName, msg.PlayerSession, board, markedCells, 0, new HashSet<int>());
@@ -78,15 +85,17 @@ public sealed class LobbyActor : ReceiveActor
             return;
 
         _players.Remove(msg.PlayerId);
-        Broadcast(new PlayerLeft(msg.PlayerId, player.DisplayName));
 
-        // Transfer host if the host left
         if (_hostPlayerId == msg.PlayerId)
         {
-            _hostPlayerId = _players.Keys.FirstOrDefault();
+            // Host left — close lobby for everyone
+            Broadcast(new LobbyClosed());
+            Context.Stop(Self);
+            return;
         }
 
-        // Self-destruct if no players remain
+        Broadcast(new PlayerLeft(msg.PlayerId, player.DisplayName));
+
         if (_players.Count == 0)
         {
             Context.Stop(Self);
