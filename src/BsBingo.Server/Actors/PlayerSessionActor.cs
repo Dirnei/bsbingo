@@ -38,8 +38,11 @@ public sealed class PlayerSessionActor : ReceiveActor
         Receive<PlayerLeft>(msg => SendToWebSocket("player:left", msg));
         Receive<GameStarted>(_ => SendToWebSocket("game:start", new { }));
         Receive<ProgressUpdate>(msg => SendToWebSocket("player:progress", msg));
+        Receive<CellSelected>(msg => SendToWebSocket("cell:selected", msg));
         Receive<PlayerBingo>(msg => SendToWebSocket("player:bingo", msg));
         Receive<GameRestarted>(_ => SendToWebSocket("game:restart", new { }));
+        Receive<SettingsChanged>(msg => SendToWebSocket("settings:changed", msg));
+        Receive<CellAutoMarked>(msg => SendToWebSocket("cell:automarked", msg));
         Receive<ChatMessage>(msg => SendToWebSocket("chat:message", msg));
         Receive<LobbyExpired>(_ => SendToWebSocket("lobby:expired", new { }));
         Receive<LobbyClosed>(_ => SendToWebSocket("lobby:closed", new { }));
@@ -76,6 +79,15 @@ public sealed class PlayerSessionActor : ReceiveActor
 
             case "game:restart":
                 _lobbyActor.Tell(new RestartGame(_playerId));
+                break;
+
+            case "settings:update":
+                if (msg.Payload is not null)
+                {
+                    var allowMultiple = msg.Payload.Value.GetProperty("allowMultipleBingos").GetBoolean();
+                    var autoSelect = msg.Payload.Value.GetProperty("autoSelect").GetBoolean();
+                    _lobbyActor.Tell(new UpdateSettings(_playerId, allowMultiple, autoSelect));
+                }
                 break;
 
             case "chat:message":

@@ -23,8 +23,11 @@ public sealed class LobbyActor : ReceiveActor
     private readonly string _groupId;
     private readonly List<string> _words;
     private readonly Dictionary<string, PlayerState> _players = new();
+    private readonly List<MarkHistoryEntry> _markHistory = new();
+    private readonly HashSet<string> _markedWords = new(StringComparer.OrdinalIgnoreCase);
     private string? _hostPlayerId;
     private bool _gameStarted;
+    private LobbySettings _settings = new(AllowMultipleBingos: true, AutoSelect: false);
 
     public LobbyActor(string lobbyCode, string groupId, List<string> words, TimeSpan inactivityTimeout)
     {
@@ -39,6 +42,7 @@ public sealed class LobbyActor : ReceiveActor
         Receive<StartGame>(HandleStartGame);
         Receive<MarkCell>(HandleMarkCell);
         Receive<RestartGame>(HandleRestartGame);
+        Receive<UpdateSettings>(HandleUpdateSettings);
         Receive<SendChat>(HandleChat);
         Receive<ReceiveTimeout>(_ => HandleTimeout());
     }
@@ -79,7 +83,9 @@ public sealed class LobbyActor : ReceiveActor
             _gameStarted,
             playerState.IsSpectator,
             playerState.IsSpectator ? null : playerState.Board,
-            playerState.IsSpectator ? null : playerState.MarkedCells));
+            playerState.IsSpectator ? null : playerState.MarkedCells,
+            _markHistory,
+            _settings));
 
         // Broadcast player joined to all other players
         BroadcastExcept(new PlayerJoined(msg.PlayerId, msg.DisplayName, playerState.GravatarHash), msg.PlayerId);
@@ -131,7 +137,9 @@ public sealed class LobbyActor : ReceiveActor
                 _gameStarted,
                 player.IsSpectator,
                 player.Board,
-                player.MarkedCells));
+                player.MarkedCells,
+                _markHistory,
+            _settings));
         }
     }
 
@@ -150,14 +158,76 @@ public sealed class LobbyActor : ReceiveActor
             return;
 
         // Toggle the mark
-        if (!player.MarkedCells.Add(msg.CellIndex))
+        var isMarking = player.MarkedCells.Add(msg.CellIndex);
+        if (!isMarking)
             player.MarkedCells.Remove(msg.CellIndex);
 
         // Broadcast progress (marked count excludes free space)
         var markedCount = player.MarkedCells.Count - 1;
         Broadcast(new ProgressUpdate(msg.PlayerId, markedCount));
 
-        // Check all 12 lines for newly completed bingos and lines that became incomplete
+        // When marking (not unmarking), broadcast the selected word
+        if (isMarking)
+        {
+            var word = player.Board[msg.CellIndex].Text;
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            Broadcast(new CellSelected(msg.PlayerId, player.DisplayName, word, timestamp));
+
+            // Track first-time word selections
+            if (_markedWords.Add(word))
+            {
+                _markHistory.Add(new MarkHistoryEntry(msg.PlayerId, player.DisplayName, word, timestamp));
+            }
+
+            // Auto-select: mark the same word on all other players' boards
+            if (_settings.AutoSelect)
+            {
+                AutoSelectWord(word, msg.PlayerId);
+            }
+        }
+
+        // Check bingos for the marking player
+        CheckBingos(msg.PlayerId);
+    }
+
+    private void AutoSelectWord(string word, string sourcePlayerId)
+    {
+        // Collect targets first to avoid modifying _players during iteration
+        var targets = new List<(string PlayerId, int CellIndex)>();
+        foreach (var (playerId, otherPlayer) in _players)
+        {
+            if (playerId == sourcePlayerId || otherPlayer.IsSpectator)
+                continue;
+
+            var cellIndex = otherPlayer.Board.FindIndex(c => !c.IsFreeSpace &&
+                string.Equals(c.Text, word, StringComparison.OrdinalIgnoreCase));
+
+            if (cellIndex >= 0 && !otherPlayer.MarkedCells.Contains(cellIndex))
+                targets.Add((playerId, cellIndex));
+        }
+
+        foreach (var (playerId, cellIndex) in targets)
+        {
+            var player = _players[playerId];
+            player.MarkedCells.Add(cellIndex);
+            player.Session.Tell(new CellAutoMarked(cellIndex));
+
+            var count = player.MarkedCells.Count - 1;
+            Broadcast(new ProgressUpdate(playerId, count));
+
+            CheckBingos(playerId);
+        }
+    }
+
+    private void CheckBingos(string playerId)
+    {
+        if (!_players.TryGetValue(playerId, out var player))
+            return;
+
+        // If multiple bingos disabled and player already has one, skip
+        if (!_settings.AllowMultipleBingos && player.BingoCount > 0)
+            return;
+
         var newBingos = new List<(int LineIndex, int[] Line)>();
         for (var i = 0; i < Lines.Length; i++)
         {
@@ -168,11 +238,15 @@ public sealed class LobbyActor : ReceiveActor
                 player.CompletedLines.Remove(i);
         }
 
-        // Broadcast each new bingo
         foreach (var (_, line) in newBingos)
         {
-            _players[msg.PlayerId] = _players[msg.PlayerId] with { BingoCount = _players[msg.PlayerId].BingoCount + 1 };
-            Broadcast(new PlayerBingo(msg.PlayerId, player.DisplayName, line.ToList()));
+            // Re-read from dictionary to get current BingoCount after previous iterations
+            var current = _players[playerId];
+            if (!_settings.AllowMultipleBingos && current.BingoCount > 0)
+                break;
+
+            _players[playerId] = current with { BingoCount = current.BingoCount + 1 };
+            Broadcast(new PlayerBingo(playerId, player.DisplayName, line.ToList()));
         }
     }
 
@@ -201,6 +275,8 @@ public sealed class LobbyActor : ReceiveActor
         }
 
         _gameStarted = false;
+        _markHistory.Clear();
+        _markedWords.Clear();
         Broadcast(new GameRestarted());
 
         // Send each player their new board via full lobby state
@@ -214,8 +290,23 @@ public sealed class LobbyActor : ReceiveActor
                 _gameStarted,
                 false,
                 player.Board,
-                player.MarkedCells));
+                player.MarkedCells,
+                _markHistory,
+            _settings));
         }
+    }
+
+    private void HandleUpdateSettings(UpdateSettings msg)
+    {
+        if (msg.PlayerId != _hostPlayerId)
+        {
+            if (_players.TryGetValue(msg.PlayerId, out var p))
+                p.Session.Tell(new LobbyError("Only the host can change settings"));
+            return;
+        }
+
+        _settings = new LobbySettings(msg.AllowMultipleBingos, msg.AutoSelect);
+        Broadcast(new SettingsChanged(_settings));
     }
 
     private void HandleChat(SendChat msg)

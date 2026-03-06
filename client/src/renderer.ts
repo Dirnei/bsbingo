@@ -21,6 +21,18 @@ export interface ChatMessageInfo {
   timestamp: number;
 }
 
+export interface LobbySettings {
+  allowMultipleBingos: boolean;
+  autoSelect: boolean;
+}
+
+export interface MarkHistoryEntry {
+  playerId: string;
+  displayName: string;
+  word: string;
+  timestamp: number;
+}
+
 export interface RenderCallbacks {
   onCellClick: (index: number) => void;
   onNewGame: () => void;
@@ -285,7 +297,7 @@ function bindJoinLobbyListeners(container: HTMLElement, onJoinLobby?: (code: str
 
 export function showGroupList(
   groups: GroupDisplayInfo[],
-  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void; onShare?: (id: string) => void; onStar?: (id: string) => void; onMultiplayer?: (id: string) => void; onJoinLobby?: (code: string, displayName: string) => void },
+  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void; onShare?: (id: string) => void; onStar?: (id: string) => void; onJoinLobby?: (code: string, displayName: string) => void },
   currentUserId?: string | null,
   currentUserName?: string | null,
 ): void {
@@ -339,8 +351,7 @@ export function showGroupList(
           <span>${g.createdByName ? escapeHtml(g.createdByName) : 'Kein Besitzer'}</span>
         </div>
         <div class="group-card-actions">
-          <button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>
-          ${g.wordCount >= 24 ? `<button class="group-action-btn group-action-multiplayer" data-action="multiplayer">👥 Multiplayer</button>` : ''}
+          ${g.wordCount >= 24 ? `<button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>` : ''}
           ${isOwner && g.visibility === 'private' ? `<button class="group-action-btn group-action-share" data-action="share">🔗 Teilen</button>` : ''}
           ${isOwner ? `<button class="group-action-btn group-action-edit" data-action="edit">✎ Bearbeiten</button>` : ''}
           ${isOwner ? `<button class="group-action-btn group-action-delete" data-action="delete">✕ Löschen</button>` : ''}
@@ -402,7 +413,6 @@ export function showGroupList(
 
     const action = btn.dataset.action;
     if (action === 'play') callbacks.onPlay(groupId);
-    else if (action === 'multiplayer' && callbacks.onMultiplayer) callbacks.onMultiplayer(groupId);
     else if (action === 'star' && callbacks.onStar) callbacks.onStar(groupId);
     else if (action === 'share' && callbacks.onShare) callbacks.onShare(groupId);
     else if (action === 'edit') callbacks.onEdit(groupId);
@@ -882,6 +892,7 @@ export function showLobbyWaitingRoom(
           <div class="lobby-player-empty">Verbinde...</div>
         </div>
       </div>
+      <div class="lobby-settings" id="lobby-settings"></div>
       <div class="lobby-host-controls" id="lobby-host-controls"></div>
       ${chatHtml()}
       <div class="lobby-waiting-hint">
@@ -939,6 +950,41 @@ export function updateLobbyPlayerList(players: LobbyPlayerDisplayInfo[], isCurre
   }
 }
 
+export function updateLobbySettings(
+  settings: LobbySettings,
+  isHost: boolean,
+  onSettingsChange: (settings: LobbySettings) => void,
+): void {
+  const el = groupSelectorEl.querySelector<HTMLDivElement>('#lobby-settings');
+  if (!el) return;
+
+  if (!isHost) {
+    el.innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="lobby-settings-card">
+      <div class="lobby-settings-title">Einstellungen</div>
+      <label class="lobby-settings-option">
+        <input type="checkbox" id="setting-multiple-bingos" ${settings.allowMultipleBingos ? 'checked' : ''} />
+        <span>Mehrere Bingos erlauben</span>
+      </label>
+      <label class="lobby-settings-option">
+        <input type="checkbox" id="setting-auto-select" ${settings.autoSelect ? 'checked' : ''} />
+        <span>Wörter automatisch markieren</span>
+      </label>
+    </div>
+  `;
+
+  el.querySelector<HTMLInputElement>('#setting-multiple-bingos')!.addEventListener('change', (e) => {
+    onSettingsChange({ ...settings, allowMultipleBingos: (e.target as HTMLInputElement).checked });
+  });
+  el.querySelector<HTMLInputElement>('#setting-auto-select')!.addEventListener('change', (e) => {
+    onSettingsChange({ ...settings, autoSelect: (e.target as HTMLInputElement).checked });
+  });
+}
+
 export function showSpectatorView(
   players: MultiplayerPlayerInfo[],
   currentPlayerId: string,
@@ -958,6 +1004,7 @@ export function showSpectatorView(
       <div class="mp-sidebar" style="max-width: 480px; margin: 0 auto;">
         <div class="mp-sidebar-title">Spieler</div>
         <div class="mp-player-list" id="mp-player-list"></div>
+        ${markHistoryHtml()}
         ${chatHtml()}
       </div>
     </div>
@@ -1002,6 +1049,7 @@ export function showMultiplayerGameView(
         <div class="mp-sidebar">
           <div class="mp-sidebar-title">Spieler</div>
           <div class="mp-player-list" id="mp-player-list"></div>
+          ${markHistoryHtml()}
           ${chatHtml()}
         </div>
       </div>
@@ -1139,6 +1187,62 @@ export function showMultiplayerBingoNotification(winnerName: string): void {
     overlay.classList.add('mp-bingo-fade');
     overlay.addEventListener('transitionend', () => overlay.remove());
   });
+}
+
+function markHistoryHtml(): string {
+  return `
+    <div class="mark-history-panel" id="mark-history-panel">
+      <div class="mark-history-title">Verlauf</div>
+      <div class="mark-history-list" id="mark-history-list">
+        <div class="mark-history-empty">Noch keine Wörter markiert.</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderHistoryItem(e: MarkHistoryEntry, isLatest: boolean): string {
+  return `
+    <div class="mark-history-item ${isLatest ? 'mark-history-latest' : ''}">
+      <span class="mark-history-word">${escapeHtml(e.word)}</span>
+      <span class="mark-history-player">${escapeHtml(e.displayName)}</span>
+    </div>
+  `;
+}
+
+export function renderMarkHistory(entries: MarkHistoryEntry[]): void {
+  const listEl = document.querySelector<HTMLDivElement>('#mark-history-list');
+  if (!listEl) return;
+
+  if (entries.length === 0) {
+    listEl.innerHTML = '<div class="mark-history-empty">Noch keine Wörter markiert.</div>';
+    return;
+  }
+
+  listEl.innerHTML = [...entries].reverse().map((e, i) => renderHistoryItem(e, i === 0)).join('');
+}
+
+export function appendMarkHistory(entry: MarkHistoryEntry): void {
+  const listEl = document.querySelector<HTMLDivElement>('#mark-history-list');
+  if (!listEl) return;
+
+  const emptyEl = listEl.querySelector('.mark-history-empty');
+  if (emptyEl) emptyEl.remove();
+
+  // Demote previous latest
+  const prev = listEl.querySelector('.mark-history-latest');
+  if (prev) prev.classList.remove('mark-history-latest');
+
+  const el = document.createElement('div');
+  el.className = 'mark-history-item mark-history-latest';
+  el.innerHTML = `
+    <span class="mark-history-word">${escapeHtml(entry.word)}</span>
+    <span class="mark-history-player">${escapeHtml(entry.displayName)}</span>
+  `;
+  listEl.prepend(el);
+}
+
+export function showCellSelectedToast(displayName: string, word: string): void {
+  showToast(`${displayName}: "${word}"`);
 }
 
 function chatHtml(): string {

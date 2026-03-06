@@ -1,5 +1,5 @@
 import './style.css';
-import { createBoardFromCells, toggleCell, resetMarks, multiplayerToggleCell, createBoardFromLobbyState } from './bingo.ts';
+import { createBoardFromCells, toggleCell, resetMarks, multiplayerToggleCell, multiplayerMarkCell, createBoardFromLobbyState } from './bingo.ts';
 import type { BingoState } from './bingo.ts';
 import {
   mountApp, renderBoard, updateCell, showLoading, showError, clearStatus,
@@ -10,8 +10,10 @@ import {
   showMultiplayerGameView, renderMultiplayerBoard, updateMultiplayerCell,
   updateMultiplayerPlayers, showMultiplayerBingoNotification,
   bindChatListeners, appendChatMessage, showSpectatorView,
+  renderMarkHistory, appendMarkHistory, showCellSelectedToast,
+  updateLobbySettings,
 } from './renderer.ts';
-import type { GroupDisplayInfo, MultiplayerPlayerInfo, ChatMessageInfo } from './renderer.ts';
+import type { GroupDisplayInfo, MultiplayerPlayerInfo, ChatMessageInfo, MarkHistoryEntry, LobbySettings } from './renderer.ts';
 import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn, starGroup, unstarGroup, createLobby } from './api.ts';
 import type { UserInfo } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
@@ -29,6 +31,8 @@ let lobbyBoard: { index: number; text: string; isFreeSpace: boolean }[] | null =
 let lobbyMarkedCells: number[] | null = null;
 let lobbyGameStarted = false;
 let lobbyIsSpectator = false;
+let lobbyMarkHistory: MarkHistoryEntry[] = [];
+let lobbySettings: LobbySettings = { allowMultipleBingos: true, autoSelect: false };
 let lobbyCode: string | null = null;
 let multiplayerState: BingoState | null = null;
 let serverHealthInterval: ReturnType<typeof setInterval> | null = null;
@@ -64,8 +68,33 @@ async function loadGroups(): Promise<void> {
 
 function showGroupListWithActions(): void {
   showGroupList(cachedGroups, {
-    onPlay: (id) => {
-      navigate(`/game/${id}`);
+    onPlay: async (id) => {
+      const group = cachedGroups.find(g => g.id === id);
+      lobbyGroupName = group?.name ?? null;
+
+      if (!currentUser) {
+        showNamePrompt(async (name) => {
+          lobbyDisplayName = name;
+          try {
+            showGroupSelectorLoading();
+            const result = await createLobby(id, name);
+            navigate(`/lobby/${result.lobbyCode}`);
+          } catch (err) {
+            showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen der Lobby');
+            showGroupListWithActions();
+          }
+        }, () => showGroupListWithActions());
+        return;
+      }
+
+      try {
+        showGroupSelectorLoading();
+        const result = await createLobby(id, currentUser.name);
+        navigate(`/lobby/${result.lobbyCode}`);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen der Lobby');
+        showGroupListWithActions();
+      }
     },
     onEdit: (id) => {
       navigate(`/groups/${id}/edit`);
@@ -97,35 +126,6 @@ function showGroupListWithActions(): void {
         });
       } catch (err) {
         showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen des Einladungslinks');
-      }
-    },
-    onMultiplayer: async (id) => {
-      const group = cachedGroups.find(g => g.id === id);
-      lobbyGroupName = group?.name ?? null;
-
-      if (!currentUser) {
-        // Anonymous user — need a name before creating lobby
-        showNamePrompt(async (name) => {
-          lobbyDisplayName = name;
-          try {
-            showGroupSelectorLoading();
-            const result = await createLobby(id, name);
-            navigate(`/lobby/${result.lobbyCode}`);
-          } catch (err) {
-            showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen der Lobby');
-            showGroupListWithActions();
-          }
-        }, () => showGroupListWithActions());
-        return;
-      }
-
-      try {
-        showGroupSelectorLoading();
-        const result = await createLobby(id, currentUser.name);
-        navigate(`/lobby/${result.lobbyCode}`);
-      } catch (err) {
-        showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen der Lobby');
-        showGroupListWithActions();
       }
     },
     onJoinLobby: (code, displayName) => {
@@ -220,6 +220,8 @@ function closeLobbyWebSocket(): void {
   lobbyMarkedCells = null;
   lobbyGameStarted = false;
   lobbyIsSpectator = false;
+  lobbyMarkHistory = [];
+  lobbySettings = { allowMultipleBingos: true, autoSelect: false };
   lobbyCode = null;
   multiplayerState = null;
 }
@@ -234,6 +236,11 @@ function bindChat(): void {
   bindChatListeners(document.body, (text) => sendLobbyMessage('chat:message', { text }));
 }
 
+function sendSettingsUpdate(settings: LobbySettings): void {
+  lobbySettings = settings;
+  sendLobbyMessage('settings:update', { allowMultipleBingos: settings.allowMultipleBingos, autoSelect: settings.autoSelect });
+}
+
 function refreshLobbyUI(): void {
   if (lobbyGameStarted && multiplayerState) {
     updateMultiplayerPlayers(lobbyPlayers, lobbyCurrentPlayerId ?? '');
@@ -241,6 +248,7 @@ function refreshLobbyUI(): void {
   }
   const isHost = lobbyPlayers.some(p => p.playerId === lobbyCurrentPlayerId && p.isHost);
   updateLobbyPlayerList(lobbyPlayers, isHost, () => sendLobbyMessage('game:start'));
+  updateLobbySettings(lobbySettings, isHost, sendSettingsUpdate);
 }
 
 function startMultiplayerGame(): void {
@@ -262,6 +270,7 @@ function startMultiplayerGame(): void {
     },
     onRestart: () => sendLobbyMessage('game:restart'),
   });
+  renderMarkHistory(lobbyMarkHistory);
   bindChat();
 }
 
@@ -275,11 +284,15 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
         isSpectator: boolean;
         board?: { index: number; text: string; isFreeSpace: boolean }[];
         markedCells?: number[];
+        markHistory?: MarkHistoryEntry[];
+        settings?: LobbySettings;
       } | undefined;
       if (!payload) break;
       lobbyCurrentPlayerId = payload.currentPlayerId;
       lobbyPlayers = payload.players;
       lobbyIsSpectator = payload.isSpectator;
+      lobbyMarkHistory = payload.markHistory ?? [];
+      if (payload.settings) lobbySettings = payload.settings;
       if (payload.board) lobbyBoard = payload.board;
       if (payload.markedCells) lobbyMarkedCells = payload.markedCells;
 
@@ -290,6 +303,7 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
             closeLobbyWebSocket();
             navigate('/groups');
           });
+          renderMarkHistory(lobbyMarkHistory);
           bindChat();
         }
       } else if (payload.gameStarted && !lobbyGameStarted) {
@@ -348,6 +362,35 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       }
       break;
     }
+    case 'cell:selected': {
+      const payload = msg.payload as { playerId: string; displayName: string; word: string; timestamp: number } | undefined;
+      if (!payload) break;
+      // Check if this word is new to the history
+      if (!lobbyMarkHistory.some(e => e.word.toLowerCase() === payload.word.toLowerCase())) {
+        lobbyMarkHistory.push(payload);
+        appendMarkHistory(payload);
+      }
+      if (payload.playerId !== lobbyCurrentPlayerId) {
+        showCellSelectedToast(payload.displayName, payload.word);
+      }
+      break;
+    }
+    case 'settings:changed': {
+      const payload = msg.payload as { settings?: LobbySettings } | undefined;
+      if (payload?.settings) {
+        lobbySettings = payload.settings;
+        const isHost = lobbyPlayers.some(p => p.playerId === lobbyCurrentPlayerId && p.isHost);
+        updateLobbySettings(lobbySettings, isHost, sendSettingsUpdate);
+      }
+      break;
+    }
+    case 'cell:automarked': {
+      const payload = msg.payload as { cellIndex: number } | undefined;
+      if (!payload || !multiplayerState) break;
+      multiplayerState = multiplayerMarkCell(multiplayerState, payload.cellIndex);
+      updateMultiplayerCell(multiplayerState, payload.cellIndex);
+      break;
+    }
     case 'player:bingo': {
       const payload = msg.payload as { playerId: string; displayName: string; winningLine: number[] } | undefined;
       if (!payload) break;
@@ -355,6 +398,9 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       if (bingoPlayer) bingoPlayer.bingoCount++;
       if (lobbyGameStarted || lobbyIsSpectator) {
         updateMultiplayerPlayers(lobbyPlayers, lobbyCurrentPlayerId ?? '');
+      }
+      if (!lobbySettings.allowMultipleBingos) {
+        document.querySelector<HTMLDivElement>('#mp-board')?.classList.add('disabled');
       }
       showMultiplayerBingoNotification(payload.displayName);
       break;

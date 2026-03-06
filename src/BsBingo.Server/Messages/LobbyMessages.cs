@@ -18,6 +18,9 @@ public sealed record StartGame(string PlayerId);
 public sealed record MarkCell(string PlayerId, int CellIndex);
 public sealed record RestartGame(string PlayerId);
 public sealed record SendChat(string PlayerId, string Text);
+public sealed record UpdateSettings(string PlayerId, bool AllowMultipleBingos, bool AutoSelect);
+
+public sealed record LobbySettings(bool AllowMultipleBingos, bool AutoSelect);
 
 // Broadcasts from LobbyActor (sent to all player sessions)
 public sealed record LobbyState(
@@ -28,7 +31,9 @@ public sealed record LobbyState(
     bool GameStarted,
     bool IsSpectator,
     List<BoardCell>? Board,
-    HashSet<int>? MarkedCells);
+    HashSet<int>? MarkedCells,
+    List<MarkHistoryEntry> MarkHistory,
+    LobbySettings Settings);
 
 public sealed record LobbyPlayerInfo(string PlayerId, string DisplayName, bool IsHost, int MarkedCount, int BingoCount, string? GravatarHash, bool IsSpectator);
 
@@ -36,8 +41,12 @@ public sealed record PlayerJoined(string PlayerId, string DisplayName, string? G
 public sealed record PlayerLeft(string PlayerId, string DisplayName);
 public sealed record GameStarted;
 public sealed record ProgressUpdate(string PlayerId, int MarkedCount);
+public sealed record CellSelected(string PlayerId, string DisplayName, string Word, long Timestamp);
+public sealed record MarkHistoryEntry(string PlayerId, string DisplayName, string Word, long Timestamp);
 public sealed record PlayerBingo(string PlayerId, string DisplayName, List<int> WinningLine);
 public sealed record GameRestarted;
+public sealed record SettingsChanged(LobbySettings Settings);
+public sealed record CellAutoMarked(int CellIndex);
 public sealed record ChatMessage(string PlayerId, string DisplayName, string? GravatarHash, string Text, long Timestamp);
 public sealed record LobbyExpired;
 public sealed record LobbyClosed;
