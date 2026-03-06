@@ -464,7 +464,6 @@ button.primary:hover {
   background: var(--panel);
   border: 1px solid var(--border);
   padding: 20px;
-  cursor: pointer;
   transition: all 0.18s;
 }
 
@@ -580,6 +579,51 @@ button.primary:hover {
 .group-action-delete:hover {
   border-color: #ff4444;
   color: #ff4444;
+}
+
+.group-action-star {
+  flex: 0 0 auto;
+}
+
+.group-action-star:hover {
+  border-color: #ffc107;
+  color: #ffc107;
+}
+
+.group-action-star.starred {
+  color: #ffc107;
+  border-color: #ffc107;
+}
+
+/* Group Card Header with star count */
+.group-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.group-card-header .group-card-name {
+  flex: 1;
+}
+
+.group-card-star-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  padding-top: 4px;
+  background: none;
+  border: none;
+}
+
+button.group-card-star-count {
+  cursor: pointer;
+}
+
+button.group-card-star-count:hover,
+button.group-card-star-count.starred {
+  color: #ffc107;
 }
 
 /* Delete Confirmation Dialog */
@@ -743,20 +787,28 @@ button.primary:hover {
 }
 
 /* Word Editor */
-.word-input-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.word-input-row .word-input {
-  flex: 1;
-}
-
 .word-add-btn {
   font-size: 11px;
   padding: 10px 16px;
   white-space: nowrap;
+}
+
+.bulk-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.bulk-input-row .bulk-input {
+  width: 100%;
+  resize: vertical;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+}
+
+.bulk-input-row .word-add-btn {
+  align-self: flex-end;
 }
 
 .word-count {

@@ -18,4 +18,8 @@ public sealed record GetGroupByInviteToken(string Token);
 
 public sealed record GetSharedUsers(string GroupId, string UserId);
 
+public sealed record StarGroup(string GroupId, string UserId);
+
+public sealed record UnstarGroup(string GroupId, string UserId);
+
 public sealed record GroupResult(bool Success, string? Error = null, object? Data = null);

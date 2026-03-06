@@ -210,6 +210,44 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 - [x] Visual feedback that the board is locked (e.g., cells appear non-interactive)
 - [x] Typecheck passes
 
+## Phase 5 — Group UX Improvements
+
+### US-015: Require login to create groups
+**Description:** As a visitor, I should not be able to create new groups without logging in, so all groups have a clear owner.
+
+**Acceptance Criteria:**
+- [x] "Neue Gruppe" button is hidden or disabled for anonymous users
+- [x] Clicking it when not logged in redirects to the login page
+- [x] Backend already rejects unauthenticated requests (existing `RequireAuthorization`)
+- [x] Typecheck passes
+
+### US-016: Star community groups
+**Description:** As a logged-in user, I want to star/unstar community groups so I can mark my favorites.
+
+**Acceptance Criteria:**
+- [x] Star icon shown on each group card for logged-in users
+- [x] Clicking the star toggles it (starred/unstarred)
+- [x] Star state persisted per user in the database
+- [x] `POST /api/groups/{id}/star` and `DELETE /api/groups/{id}/star` endpoints
+- [x] Star count visible on the group card
+- [x] Typecheck passes
+
+### US-017: Sort groups by star count
+**Description:** As a user, I want the group list sorted so that popular (most-starred) groups appear first.
+
+**Acceptance Criteria:**
+- [x] Groups sorted by star count descending by default
+- [x] Groups with equal stars maintain stable secondary sort (e.g., by name)
+- [x] Typecheck passes
+
+### US-018: Pointer cursor only on interactive elements
+**Description:** As a user, I want the pointer (hand) cursor to only appear when hovering over clickable buttons, not the entire group card.
+
+**Acceptance Criteria:**
+- [x] `cursor: pointer` removed from the group card container
+- [x] `cursor: pointer` remains on buttons (Play, Edit, Delete, Share, Star)
+- [x] Typecheck passes
+
 ## Open Questions
 
 - Should JWT be stored in an httpOnly cookie or localStorage?

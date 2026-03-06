@@ -225,11 +225,13 @@ export interface GroupDisplayInfo {
   visibility: string;
   inviteToken: string | null;
   sharedWith: string[] | null;
+  starCount: number;
+  isStarred: boolean;
 }
 
 export function showGroupList(
   groups: GroupDisplayInfo[],
-  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void; onShare?: (id: string) => void },
+  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void; onShare?: (id: string) => void; onStar?: (id: string) => void },
   currentUserId?: string | null,
 ): void {
   groupSelectorEl.classList.remove('hidden');
@@ -239,11 +241,11 @@ export function showGroupList(
     groupSelectorEl.innerHTML = `
       <div class="group-list-header">
         <div class="group-selector-title">Wortgruppen</div>
-        <button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>
+        ${currentUserId ? '<button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>' : ''}
       </div>
       <div class="group-selector-status">Keine Wortgruppen gefunden.</div>
     `;
-    groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')!.addEventListener('click', callbacks.onCreate);
+    groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')?.addEventListener('click', callbacks.onCreate);
     return;
   }
 
@@ -255,9 +257,16 @@ export function showGroupList(
 
   function renderCard(g: GroupDisplayInfo, showOwnerActions: boolean): string {
     const isOwner = showOwnerActions && !!currentUserId && g.createdBy === currentUserId;
+    const starIcon = g.isStarred ? '★' : '☆';
+    const starClass = g.isStarred ? 'group-action-star starred' : 'group-action-star';
     return `
       <div class="group-card" data-group-id="${escapeHtml(g.id)}">
-        <div class="group-card-name">${escapeHtml(g.name)}${g.visibility === 'private' ? ' <span class="visibility-badge visibility-private">Privat</span>' : ''}</div>
+        <div class="group-card-header">
+          <div class="group-card-name">${escapeHtml(g.name)}${g.visibility === 'private' ? ' <span class="visibility-badge visibility-private">Privat</span>' : ''}</div>
+          ${currentUserId
+            ? `<button class="group-card-star-count ${starClass}" data-action="star">${starIcon} ${g.starCount}</button>`
+            : `<div class="group-card-star-count">${starIcon} ${g.starCount}</div>`}
+        </div>
         <div class="group-card-desc">${escapeHtml(g.description || 'Keine Beschreibung')}</div>
         <div class="group-card-meta">
           <span>${g.wordCount} Wörter</span>
@@ -277,7 +286,7 @@ export function showGroupList(
   groupSelectorEl.innerHTML = `
     <div class="group-list-header">
       <div class="group-selector-title">Wortgruppen</div>
-      <button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>
+      ${currentUserId ? '<button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>' : ''}
     </div>
     ${builtinGroups.length > 0 ? `
       <div class="group-cards">
@@ -303,7 +312,7 @@ export function showGroupList(
   groupListAbortController = new AbortController();
   const signal = groupListAbortController.signal;
 
-  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')!.addEventListener('click', callbacks.onCreate, { signal });
+  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')?.addEventListener('click', callbacks.onCreate, { signal });
 
   groupSelectorEl.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
@@ -315,6 +324,7 @@ export function showGroupList(
 
     const action = btn.dataset.action;
     if (action === 'play') callbacks.onPlay(groupId);
+    else if (action === 'star' && callbacks.onStar) callbacks.onStar(groupId);
     else if (action === 'share' && callbacks.onShare) callbacks.onShare(groupId);
     else if (action === 'edit') callbacks.onEdit(groupId);
     else if (action === 'delete') {

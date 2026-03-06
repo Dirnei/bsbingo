@@ -256,7 +256,9 @@ app.MapGet("/api/groups", async (ClaimsPrincipal user, IRequiredActor<GroupActor
         CreatedByName = g.CreatedBy is not null && ownerNames.TryGetValue(g.CreatedBy, out var name) ? name : null,
         g.Visibility,
         InviteToken = (userId is not null && g.CreatedBy == userId) ? g.InviteToken : null,
-        SharedWith = (userId is not null && g.CreatedBy == userId) ? g.SharedWith : null
+        SharedWith = (userId is not null && g.CreatedBy == userId) ? g.SharedWith : null,
+        StarCount = g.StarredBy.Count,
+        IsStarred = userId is not null && g.StarredBy.Contains(userId)
     }));
 });
 
@@ -391,6 +393,44 @@ app.MapGet("/api/groups/{id}/shared", async (string id, ClaimsPrincipal user, IR
     }
 
     return Results.Ok(new { sharedWith = (List<string>)result.Data! });
+}).RequireAuthorization();
+
+// POST /api/groups/{id}/star — star a group
+app.MapPost("/api/groups/{id}/star", async (string id, ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
+{
+    var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+    var result = await groupActor.ActorRef.Ask<GroupResult>(
+        new StarGroup(id, userId!), askTimeout);
+
+    if (!result.Success)
+    {
+        return result.Error switch
+        {
+            "Group not found" => Results.NotFound(new { error = result.Error }),
+            _ => Results.BadRequest(new { error = result.Error })
+        };
+    }
+
+    return Results.Ok(new { starCount = (int)result.Data! });
+}).RequireAuthorization();
+
+// DELETE /api/groups/{id}/star — unstar a group
+app.MapDelete("/api/groups/{id}/star", async (string id, ClaimsPrincipal user, IRequiredActor<GroupActor> groupActor) =>
+{
+    var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+    var result = await groupActor.ActorRef.Ask<GroupResult>(
+        new UnstarGroup(id, userId!), askTimeout);
+
+    if (!result.Success)
+    {
+        return result.Error switch
+        {
+            "Group not found" => Results.NotFound(new { error = result.Error }),
+            _ => Results.BadRequest(new { error = result.Error })
+        };
+    }
+
+    return Results.Ok(new { starCount = (int)result.Data! });
 }).RequireAuthorization();
 
 // POST /api/game/new?groupId={id} — generate a randomized 25-cell board
