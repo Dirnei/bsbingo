@@ -781,10 +781,16 @@ export function showShareDialog(inviteUrl: string, onClose: () => void): void {
   overlay.addEventListener('click', (e) => { if (e.target === overlay) { cleanup(); onClose(); } });
 }
 
+export interface LobbyPlayerDisplayInfo {
+  playerId: string;
+  displayName: string;
+  isHost: boolean;
+}
+
 export function showLobbyWaitingRoom(
   lobbyCode: string,
   groupName: string,
-  callbacks: { onBack: () => void },
+  callbacks: { onBack: () => void; onStartGame: () => void },
 ): void {
   groupSelectorEl.classList.remove('hidden');
   gameViewEl.classList.add('hidden');
@@ -794,7 +800,7 @@ export function showLobbyWaitingRoom(
   groupSelectorEl.innerHTML = `
     <div class="lobby-waiting-room">
       <button class="back-link" id="btn-back">← Zurück</button>
-      <div class="lobby-waiting-title">Lobby erstellt</div>
+      <div class="lobby-waiting-title">Lobby</div>
       <div class="lobby-waiting-subtitle">${escapeHtml(groupName)}</div>
       <div class="lobby-code-card">
         <div class="lobby-code-label">Lobby-Code</div>
@@ -805,6 +811,13 @@ export function showLobbyWaitingRoom(
         </div>
         <div class="lobby-copied hidden" id="lobby-copied">Kopiert!</div>
       </div>
+      <div class="lobby-player-section">
+        <div class="lobby-player-label">Spieler</div>
+        <div class="lobby-player-list" id="lobby-player-list">
+          <div class="lobby-player-empty">Verbinde...</div>
+        </div>
+      </div>
+      <div class="lobby-host-controls" id="lobby-host-controls"></div>
       <div class="lobby-waiting-hint">
         Teile den Code mit anderen Spielern, damit sie beitreten können.
       </div>
@@ -825,6 +838,33 @@ export function showLobbyWaitingRoom(
     const el = groupSelectorEl.querySelector<HTMLDivElement>('#lobby-copied')!;
     el.classList.remove('hidden');
     setTimeout(() => el.classList.add('hidden'), 2000);
+  }
+}
+
+export function updateLobbyPlayerList(players: LobbyPlayerDisplayInfo[], isCurrentPlayerHost: boolean, onStartGame: () => void): void {
+  const listEl = groupSelectorEl.querySelector<HTMLDivElement>('#lobby-player-list');
+  if (!listEl) return;
+
+  if (players.length === 0) {
+    listEl.innerHTML = `<div class="lobby-player-empty">Keine Spieler</div>`;
+  } else {
+    listEl.innerHTML = players.map(p => `
+      <div class="lobby-player-item">
+        <div class="lobby-player-avatar">${escapeHtml(p.displayName.charAt(0).toUpperCase())}</div>
+        <div class="lobby-player-name">${escapeHtml(p.displayName)}</div>
+        ${p.isHost ? '<div class="lobby-player-host-badge">Host</div>' : ''}
+      </div>
+    `).join('');
+  }
+
+  const controlsEl = groupSelectorEl.querySelector<HTMLDivElement>('#lobby-host-controls');
+  if (!controlsEl) return;
+
+  if (isCurrentPlayerHost) {
+    controlsEl.innerHTML = `<button class="primary lobby-start-btn" id="btn-start-game">Spiel starten</button>`;
+    controlsEl.querySelector<HTMLButtonElement>('#btn-start-game')!.addEventListener('click', onStartGame);
+  } else {
+    controlsEl.innerHTML = `<div class="lobby-waiting-for-host">Warte auf den Host...</div>`;
   }
 }
 

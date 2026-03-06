@@ -89,12 +89,12 @@ Add real-time multiplayer support so players in the same lobby see each other's 
 **Description:** As a player in a lobby, I want to see who else is in the lobby while waiting for the game to start.
 
 **Acceptance Criteria:**
-- [ ] Waiting room shows lobby code, group name, and player list
-- [ ] Player list updates in real-time as players join/leave
-- [ ] Each player shows display name (and avatar if authenticated)
-- [ ] Host has a "Start Game" button
-- [ ] Non-host players see "Waiting for host to start..."
-- [ ] Typecheck passes
+- [x] Waiting room shows lobby code, group name, and player list
+- [x] Player list updates in real-time as players join/leave
+- [x] Each player shows display name (and avatar if authenticated)
+- [x] Host has a "Start Game" button
+- [x] Non-host players see "Waiting for host to start..."
+- [x] Typecheck passes
 
 ### US-008: Real-time game play with WebSocket messages
 **Description:** As a player, I want to play bingo in real-time where my marks are tracked and other players' progress is visible.

@@ -22,6 +22,7 @@ public sealed record RestartGame(string PlayerId);
 public sealed record LobbyState(
     string LobbyCode,
     string GroupId,
+    string CurrentPlayerId,
     List<LobbyPlayerInfo> Players,
     bool GameStarted,
     List<BoardCell>? Board,

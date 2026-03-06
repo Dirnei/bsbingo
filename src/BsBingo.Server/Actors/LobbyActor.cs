@@ -62,6 +62,7 @@ public sealed class LobbyActor : ReceiveActor
         msg.PlayerSession.Tell(new LobbyState(
             _lobbyCode,
             _groupId,
+            msg.PlayerId,
             GetPlayerInfoList(),
             _gameStarted,
             playerState.Board,
@@ -159,11 +160,12 @@ public sealed class LobbyActor : ReceiveActor
         Broadcast(new GameRestarted());
 
         // Send each player their new board via full lobby state
-        foreach (var (_, player) in _players)
+        foreach (var (playerId, player) in _players)
         {
             player.Session.Tell(new LobbyState(
                 _lobbyCode,
                 _groupId,
+                playerId,
                 GetPlayerInfoList(),
                 _gameStarted,
                 player.Board,

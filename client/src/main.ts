@@ -6,9 +6,9 @@ import {
   showGroupList, showGroupSelectorLoading, showGroupSelectorError, showGameView,
   showDeleteConfirmDialog, showGroupCreateForm, showGroupEditForm, showToast,
   showStaticPage, showLoginPage, updateHeaderAuth, showInvitePage, showShareDialog,
-  showLobbyWaitingRoom,
+  showLobbyWaitingRoom, updateLobbyPlayerList,
 } from './renderer.ts';
-import type { GroupDisplayInfo } from './renderer.ts';
+import type { GroupDisplayInfo, LobbyPlayerDisplayInfo } from './renderer.ts';
 import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn, starGroup, unstarGroup, createLobby } from './api.ts';
 import type { UserInfo } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
@@ -20,6 +20,8 @@ let currentUser: UserInfo | null = null;
 let lobbyGroupName: string | null = null;
 let lobbyDisplayName: string | null = null;
 let lobbyWebSocket: WebSocket | null = null;
+let lobbyPlayers: LobbyPlayerDisplayInfo[] = [];
+let lobbyCurrentPlayerId: string | null = null;
 
 function refreshHeaderAuth(): void {
   updateHeaderAuth(currentUser, {
@@ -161,6 +163,58 @@ function closeLobbyWebSocket(): void {
     lobbyWebSocket.close();
     lobbyWebSocket = null;
   }
+  lobbyPlayers = [];
+  lobbyCurrentPlayerId = null;
+}
+
+function sendLobbyMessage(type: string, payload?: Record<string, unknown>): void {
+  if (lobbyWebSocket?.readyState === WebSocket.OPEN) {
+    lobbyWebSocket.send(JSON.stringify({ type, payload }));
+  }
+}
+
+function refreshLobbyUI(): void {
+  const isHost = lobbyPlayers.some(p => p.playerId === lobbyCurrentPlayerId && p.isHost);
+  updateLobbyPlayerList(lobbyPlayers, isHost, () => sendLobbyMessage('game:start'));
+}
+
+function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknown> }): void {
+  switch (msg.type) {
+    case 'lobby:state': {
+      const payload = msg.payload as { currentPlayerId: string; players: LobbyPlayerDisplayInfo[]; gameStarted: boolean } | undefined;
+      if (!payload) break;
+      lobbyCurrentPlayerId = payload.currentPlayerId;
+      lobbyPlayers = payload.players.map(p => ({
+        playerId: p.playerId,
+        displayName: p.displayName,
+        isHost: p.isHost,
+      }));
+      refreshLobbyUI();
+      break;
+    }
+    case 'player:joined': {
+      const payload = msg.payload as { playerId: string; displayName: string } | undefined;
+      if (!payload) break;
+      if (!lobbyPlayers.some(p => p.playerId === payload.playerId)) {
+        lobbyPlayers.push({ playerId: payload.playerId, displayName: payload.displayName, isHost: false });
+      }
+      refreshLobbyUI();
+      break;
+    }
+    case 'player:left': {
+      const payload = msg.payload as { playerId: string; displayName: string } | undefined;
+      if (!payload) break;
+      lobbyPlayers = lobbyPlayers.filter(p => p.playerId !== payload.playerId);
+      // Host may have changed — we'll get a lobby:state if needed
+      refreshLobbyUI();
+      break;
+    }
+    case 'error': {
+      const errorMsg = (msg.payload?.message as string) ?? 'Unbekannter Fehler';
+      showToast(errorMsg);
+      break;
+    }
+  }
 }
 
 function connectToLobby(code: string, displayName: string): void {
@@ -179,11 +233,7 @@ function connectToLobby(code: string, displayName: string): void {
   ws.addEventListener('message', (event) => {
     try {
       const msg = JSON.parse(event.data) as { type: string; payload?: Record<string, unknown> };
-      if (msg.type === 'error') {
-        const errorMsg = (msg.payload?.message as string) ?? 'Unbekannter Fehler';
-        showToast(errorMsg);
-      }
-      // Additional message handling will be added in US-007/US-008
+      handleLobbyMessage(msg);
     } catch {
       // Ignore malformed messages
     }
@@ -271,6 +321,7 @@ registerRoutes([
           closeLobbyWebSocket();
           navigate('/groups');
         },
+        onStartGame: () => sendLobbyMessage('game:start'),
       });
 
       connectToLobby(code, displayName);
