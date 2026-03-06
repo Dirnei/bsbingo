@@ -57,11 +57,11 @@ Add real-time multiplayer support so players in the same lobby see each other's 
 **Description:** As a frontend developer, I need a WebSocket endpoint so the client can establish a real-time connection to a lobby.
 
 **Acceptance Criteria:**
-- [ ] WebSocket endpoint at `/ws/lobby`
-- [ ] Accepts connection and creates a PlayerSessionActor
-- [ ] Handles the full message protocol (see US-008)
-- [ ] Graceful disconnect handling
-- [ ] Typecheck passes
+- [x] WebSocket endpoint at `/ws/lobby`
+- [x] Accepts connection and creates a PlayerSessionActor
+- [x] Handles the full message protocol (see US-008)
+- [x] Graceful disconnect handling
+- [x] Typecheck passes
 
 ### US-005: Lobby creation API and UI
 **Description:** As a host, I want to create a multiplayer lobby by selecting a word group so I can invite others to play.
