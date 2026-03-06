@@ -104,6 +104,19 @@ public sealed class LobbyActor : ReceiveActor
 
         _gameStarted = true;
         Broadcast(new GameStarted());
+
+        // Send each player their full state so the client has the board
+        foreach (var (playerId, player) in _players)
+        {
+            player.Session.Tell(new LobbyState(
+                _lobbyCode,
+                _groupId,
+                playerId,
+                GetPlayerInfoList(),
+                _gameStarted,
+                player.Board,
+                player.MarkedCells));
+        }
     }
 
     private void HandleMarkCell(MarkCell msg)

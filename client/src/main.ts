@@ -298,8 +298,9 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       break;
     }
     case 'game:restart': {
-      // Server will follow up with individual lobby:state for each player
-      lobbyGameStarted = false;
+      // Server will follow up with individual lobby:state for each player.
+      // Don't reset lobbyGameStarted here — let the lobby:state handler
+      // detect the transition (gameStarted=false && lobbyGameStarted=true).
       multiplayerState = null;
       break;
     }
@@ -319,6 +320,7 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
 
 function connectToLobby(code: string, displayName: string): void {
   closeLobbyWebSocket();
+  lobbyCode = code;
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsUrl = `${protocol}//${window.location.host}/ws/lobby?code=${encodeURIComponent(code)}`;
