@@ -803,6 +803,36 @@ button.group-card-star-count.starred {
   white-space: nowrap;
 }
 
+.bulk-input-details {
+  margin-bottom: 8px;
+}
+
+.bulk-input-toggle {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+
+.bulk-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.bulk-input-row .bulk-input {
+  width: 100%;
+  resize: vertical;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+}
+
+.bulk-input-row .word-add-btn {
+  align-self: flex-end;
+}
+
 .word-count {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;

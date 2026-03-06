@@ -73,9 +73,16 @@ export function createWordEditor(options: WordEditorOptions): WordEditor {
     container.innerHTML = `
       <div class="word-editor">
         <div class="word-input-row">
-          <input class="form-input word-input" type="text" id="we-word-input" placeholder="Neues Wort eingeben…" maxlength="60" />
+          <input class="form-input word-input" type="text" id="we-word-input" placeholder="Wort oder kommagetrennte Liste…" />
           <button class="primary word-add-btn" id="we-btn-add-word">+ Hinzufügen</button>
         </div>
+        <details class="bulk-input-details">
+          <summary class="bulk-input-toggle">Mehrere Wörter auf einmal einfügen</summary>
+          <div class="bulk-input-row">
+            <textarea class="form-input bulk-input" id="we-bulk-input" rows="4" placeholder="Ein Wort pro Zeile oder kommagetrennt…"></textarea>
+            <button class="primary word-add-btn" id="we-btn-add-bulk">+ Alle hinzufügen</button>
+          </div>
+        </details>
         ${renderWordCount()}
         <div class="form-error hidden" id="we-words-error"></div>
         <div class="word-list" id="we-word-list">
@@ -96,25 +103,52 @@ export function createWordEditor(options: WordEditorOptions): WordEditor {
       : `${words.length} Wörter — Minimum erreicht ✓`;
   }
 
+  function parseWords(input: string): string[] {
+    return input
+      .split(/[,\n]+/)
+      .map((w) => w.trim())
+      .filter((w) => w.length > 0);
+  }
+
   function addWord(): void {
     const input = container.querySelector<HTMLInputElement>('#we-word-input')!;
-    const val = input.value.trim();
-    if (!val) return;
+    const parsed = parseWords(input.value);
+    if (parsed.length === 0) return;
 
-    // Duplicate detection: warn but allow
-    const duplicate = words.some((w) => w.toLowerCase() === val.toLowerCase());
-    if (duplicate) {
+    let lastDuplicate: string | null = null;
+    for (const val of parsed) {
+      if (words.some((w) => w.toLowerCase() === val.toLowerCase())) {
+        lastDuplicate = val;
+      }
+      words.push(val);
+    }
+
+    if (lastDuplicate) {
       const countEl = container.querySelector<HTMLDivElement>('#we-word-count')!;
-      countEl.textContent = `Duplikat: "${val}" existiert bereits`;
+      countEl.textContent = parsed.length > 1
+        ? `Duplikate erkannt (z.B. "${lastDuplicate}")`
+        : `Duplikat: "${lastDuplicate}" existiert bereits`;
       countEl.className = 'word-count warning';
       if (duplicateTimeout) clearTimeout(duplicateTimeout);
       duplicateTimeout = setTimeout(() => updateWordCountEl(), 2000);
     }
 
-    words.push(val);
     render();
     notifyChange();
     container.querySelector<HTMLInputElement>('#we-word-input')!.focus();
+  }
+
+  function addBulkWords(): void {
+    const textarea = container.querySelector<HTMLTextAreaElement>('#we-bulk-input')!;
+    const parsed = parseWords(textarea.value);
+    if (parsed.length === 0) return;
+
+    for (const val of parsed) {
+      words.push(val);
+    }
+
+    render();
+    notifyChange();
   }
 
   function attachEvents(): void {
@@ -129,6 +163,9 @@ export function createWordEditor(options: WordEditorOptions): WordEditor {
     });
 
     addBtn.addEventListener('click', addWord);
+
+    const bulkBtn = container.querySelector<HTMLButtonElement>('#we-btn-add-bulk');
+    bulkBtn?.addEventListener('click', addBulkWords);
 
     // Remove word
     container.querySelector('#we-word-list')!.addEventListener('click', (e) => {
