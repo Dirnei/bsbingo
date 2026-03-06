@@ -107,6 +107,7 @@ builder.Services.AddAkka("bsbingo", configurationBuilder =>
         helper.Register<GroupActor>();
         helper.Register<GameActor>();
         helper.Register<UserActor>();
+        helper.Register<LobbyManagerActor>();
     });
 });
 
@@ -123,6 +124,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost,
 });
 
+app.UseWebSockets();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -440,6 +442,67 @@ app.MapPost("/api/game/new", async (string groupId, IRequiredActor<GameActor> ga
     return board is null ? Results.NotFound() : Results.Ok(board);
 });
 
+// --- Lobby endpoints ---
+
+// POST /api/lobbies — create a new multiplayer lobby for a group
+app.MapPost("/api/lobbies", async (CreateLobbyRequest request, IRequiredActor<LobbyManagerActor> lobbyManager) =>
+{
+    var result = await lobbyManager.ActorRef.Ask<object>(
+        new CreateLobby(request.GroupId, request.HostDisplayName), askTimeout);
+
+    return result switch
+    {
+        LobbyCreated created => Results.Ok(new { lobbyCode = created.LobbyCode }),
+        LobbyNotFound notFound => Results.BadRequest(new { error = notFound.LobbyCode }),
+        _ => Results.Problem("Unexpected response")
+    };
+});
+
+// --- WebSocket endpoint ---
+
+app.Map("/ws/lobby", async (HttpContext context, IRequiredActor<LobbyManagerActor> lobbyManager) =>
+{
+    if (!context.WebSockets.IsWebSocketRequest)
+        return Results.BadRequest(new { error = "WebSocket connection required" });
+
+    var lobbyCode = context.Request.Query["code"].ToString().ToUpperInvariant();
+    if (string.IsNullOrEmpty(lobbyCode))
+        return Results.BadRequest(new { error = "Missing 'code' query parameter" });
+
+    // Verify the lobby exists
+    var findResult = await lobbyManager.ActorRef.Ask<object>(
+        new FindLobby(lobbyCode), askTimeout);
+
+    if (findResult is LobbyNotFound)
+    {
+        return Results.NotFound(new { error = "Lobby not found" });
+    }
+
+    var lobbyFound = (LobbyFound)findResult;
+    var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+    var playerId = Guid.NewGuid().ToString("N")[..12];
+
+    // Create the PlayerSessionActor
+    var actorSystem = context.RequestServices.GetRequiredService<ActorSystem>();
+    var sessionActor = actorSystem.ActorOf(
+        Props.Create(() => new PlayerSessionActor(webSocket, playerId, lobbyFound.LobbyActorRef)),
+        $"player-session-{playerId}");
+
+    // Run the read loop (blocks until the WebSocket closes)
+    await PlayerSessionActor.RunReadLoopAsync(webSocket, sessionActor, context.RequestAborted);
+
+    // Clean up
+    if (webSocket.State == System.Net.WebSockets.WebSocketState.Open)
+    {
+        await webSocket.CloseAsync(
+            System.Net.WebSockets.WebSocketCloseStatus.NormalClosure,
+            "Connection closed",
+            CancellationToken.None);
+    }
+
+    return Results.Empty;
+});
+
 app.MapFallbackToFile("index.html");
 
 app.Run();
@@ -447,3 +510,4 @@ app.Run();
 // Request DTOs
 public sealed record CreateGroupRequest(string Name, string? Description, List<string> Words, string? Visibility = "public");
 public sealed record UpdateGroupRequest(string Name, string? Description, List<string> Words, string? Visibility = "public");
+public sealed record CreateLobbyRequest(string GroupId, string HostDisplayName);

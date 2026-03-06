@@ -4,6 +4,14 @@ import { createWordEditor } from './word-editor.ts';
 import type { WordEditor } from './word-editor.ts';
 import type { UserInfo } from './api.ts';
 
+export interface MultiplayerPlayerInfo {
+  playerId: string;
+  displayName: string;
+  isHost: boolean;
+  markedCount: number;
+  bingoCount: number;
+}
+
 export interface RenderCallbacks {
   onCellClick: (index: number) => void;
   onNewGame: () => void;
@@ -229,11 +237,50 @@ export interface GroupDisplayInfo {
   isStarred: boolean;
 }
 
+function bindJoinLobbyListeners(container: HTMLElement, onJoinLobby?: (code: string, displayName: string) => void, loggedInName?: string): void {
+  const joinBtn = container.querySelector<HTMLButtonElement>('#btn-join-lobby');
+  const joinCodeInput = container.querySelector<HTMLInputElement>('#lobby-join-code');
+  const joinNameInput = container.querySelector<HTMLInputElement>('#lobby-join-name');
+  const joinError = container.querySelector<HTMLDivElement>('#lobby-join-error');
+
+  joinCodeInput?.addEventListener('input', () => {
+    joinCodeInput.value = joinCodeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  });
+
+  function attemptJoinLobby(): void {
+    if (!joinCodeInput || !joinError || !onJoinLobby) return;
+
+    const code = joinCodeInput.value.trim().toUpperCase();
+    const displayName = loggedInName ?? joinNameInput?.value.trim() ?? '';
+
+    joinError.classList.add('hidden');
+
+    if (!code || code.length < 4) {
+      joinError.textContent = 'Bitte gib einen gültigen Lobby-Code ein.';
+      joinError.classList.remove('hidden');
+      return;
+    }
+    if (!displayName) {
+      joinError.textContent = 'Bitte gib deinen Namen ein.';
+      joinError.classList.remove('hidden');
+      return;
+    }
+
+    onJoinLobby(code, displayName);
+  }
+
+  joinBtn?.addEventListener('click', attemptJoinLobby);
+  joinCodeInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptJoinLobby(); });
+  joinNameInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptJoinLobby(); });
+}
+
 export function showGroupList(
   groups: GroupDisplayInfo[],
-  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void; onShare?: (id: string) => void; onStar?: (id: string) => void },
+  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void; onShare?: (id: string) => void; onStar?: (id: string) => void; onMultiplayer?: (id: string) => void; onJoinLobby?: (code: string, displayName: string) => void },
   currentUserId?: string | null,
+  currentUserName?: string | null,
 ): void {
+  const loggedInName = currentUserId && currentUserName ? currentUserName : undefined;
   groupSelectorEl.classList.remove('hidden');
   gameViewEl.classList.add('hidden');
 
@@ -243,9 +290,19 @@ export function showGroupList(
         <div class="group-selector-title">Wortgruppen</div>
         ${currentUserId ? '<button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>' : ''}
       </div>
+      <div class="lobby-join-card">
+        <div class="lobby-join-title">Lobby beitreten</div>
+        <div class="lobby-join-form">
+          <input class="lobby-join-input" type="text" id="lobby-join-code" placeholder="Lobby-Code (z.B. ABCD12)" maxlength="6" autocomplete="off" />
+          ${!currentUserId ? '<input class="lobby-join-input" type="text" id="lobby-join-name" placeholder="Dein Name" maxlength="30" autocomplete="off" />' : ''}
+          <button class="lobby-join-btn" id="btn-join-lobby">Beitreten</button>
+        </div>
+        <div class="lobby-join-error hidden" id="lobby-join-error"></div>
+      </div>
       <div class="group-selector-status">Keine Wortgruppen gefunden.</div>
     `;
     groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')?.addEventListener('click', callbacks.onCreate);
+    bindJoinLobbyListeners(groupSelectorEl, callbacks.onJoinLobby, loggedInName);
     return;
   }
 
@@ -274,6 +331,7 @@ export function showGroupList(
         </div>
         <div class="group-card-actions">
           <button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>
+          ${g.wordCount >= 24 ? `<button class="group-action-btn group-action-multiplayer" data-action="multiplayer">👥 Multiplayer</button>` : ''}
           ${isOwner && g.visibility === 'private' ? `<button class="group-action-btn group-action-share" data-action="share">🔗 Teilen</button>` : ''}
           ${isOwner ? `<button class="group-action-btn group-action-edit" data-action="edit">✎ Bearbeiten</button>` : ''}
           ${isOwner ? `<button class="group-action-btn group-action-delete" data-action="delete">✕ Löschen</button>` : ''}
@@ -287,6 +345,15 @@ export function showGroupList(
     <div class="group-list-header">
       <div class="group-selector-title">Wortgruppen</div>
       ${currentUserId ? '<button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>' : ''}
+    </div>
+    <div class="lobby-join-card">
+      <div class="lobby-join-title">Lobby beitreten</div>
+      <div class="lobby-join-form">
+        <input class="lobby-join-input" type="text" id="lobby-join-code" placeholder="Lobby-Code (z.B. ABCD12)" maxlength="6" autocomplete="off" />
+        ${!currentUserId ? '<input class="lobby-join-input" type="text" id="lobby-join-name" placeholder="Dein Name" maxlength="30" autocomplete="off" />' : ''}
+        <button class="lobby-join-btn" id="btn-join-lobby">Beitreten</button>
+      </div>
+      <div class="lobby-join-error hidden" id="lobby-join-error"></div>
     </div>
     ${builtinGroups.length > 0 ? `
       <div class="group-cards">
@@ -314,6 +381,8 @@ export function showGroupList(
 
   groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')?.addEventListener('click', callbacks.onCreate, { signal });
 
+  bindJoinLobbyListeners(groupSelectorEl, callbacks.onJoinLobby, loggedInName);
+
   groupSelectorEl.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
     if (!btn) return;
@@ -324,6 +393,7 @@ export function showGroupList(
 
     const action = btn.dataset.action;
     if (action === 'play') callbacks.onPlay(groupId);
+    else if (action === 'multiplayer' && callbacks.onMultiplayer) callbacks.onMultiplayer(groupId);
     else if (action === 'star' && callbacks.onStar) callbacks.onStar(groupId);
     else if (action === 'share' && callbacks.onShare) callbacks.onShare(groupId);
     else if (action === 'edit') callbacks.onEdit(groupId);
@@ -719,6 +789,303 @@ export function showShareDialog(inviteUrl: string, onClose: () => void): void {
 
   overlay.querySelector('#dialog-close')!.addEventListener('click', () => { cleanup(); onClose(); });
   overlay.addEventListener('click', (e) => { if (e.target === overlay) { cleanup(); onClose(); } });
+}
+
+export interface LobbyPlayerDisplayInfo {
+  playerId: string;
+  displayName: string;
+  isHost: boolean;
+}
+
+export function showNamePrompt(onSubmit: (name: string) => void, onCancel: () => void): void {
+  const overlay = document.createElement('div');
+  overlay.className = 'dialog-overlay';
+  overlay.innerHTML = `
+    <div class="dialog">
+      <div class="dialog-title">Dein Name</div>
+      <div class="dialog-message">
+        Gib deinen Namen ein, um der Lobby beizutreten.
+      </div>
+      <input class="form-input" type="text" id="name-prompt-input" placeholder="Name" maxlength="30" autocomplete="off" />
+      <div class="form-error hidden" id="name-prompt-error"></div>
+      <div class="dialog-actions">
+        <button class="dialog-btn-cancel" id="name-prompt-cancel">Abbrechen</button>
+        <button class="primary" id="name-prompt-submit">Weiter</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  const input = overlay.querySelector<HTMLInputElement>('#name-prompt-input')!;
+  const errorEl = overlay.querySelector<HTMLDivElement>('#name-prompt-error')!;
+  input.focus();
+
+  function submit(): void {
+    const name = input.value.trim();
+    if (!name) {
+      errorEl.textContent = 'Bitte gib einen Namen ein.';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+    overlay.remove();
+    onSubmit(name);
+  }
+
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  overlay.querySelector('#name-prompt-submit')!.addEventListener('click', submit);
+  overlay.querySelector('#name-prompt-cancel')!.addEventListener('click', () => { overlay.remove(); onCancel(); });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) { overlay.remove(); onCancel(); } });
+}
+
+export function showLobbyWaitingRoom(
+  lobbyCode: string,
+  groupName: string,
+  callbacks: { onBack: () => void; onStartGame: () => void },
+): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+
+  const shareUrl = `${window.location.origin}/#/lobby/${encodeURIComponent(lobbyCode)}`;
+
+  groupSelectorEl.innerHTML = `
+    <div class="lobby-waiting-room">
+      <button class="back-link" id="btn-back">← Zurück</button>
+      <div class="lobby-waiting-title">Lobby</div>
+      <div class="lobby-waiting-subtitle">${escapeHtml(groupName)}</div>
+      <div class="lobby-code-card">
+        <div class="lobby-code-label">Lobby-Code</div>
+        <div class="lobby-code-value" id="lobby-code">${escapeHtml(lobbyCode)}</div>
+        <div class="lobby-code-actions">
+          <button class="lobby-copy-btn" id="btn-copy-code">Code kopieren</button>
+          <button class="lobby-copy-btn" id="btn-copy-link">Link kopieren</button>
+        </div>
+        <div class="lobby-copied hidden" id="lobby-copied">Kopiert!</div>
+      </div>
+      <div class="lobby-player-section">
+        <div class="lobby-player-label">Spieler</div>
+        <div class="lobby-player-list" id="lobby-player-list">
+          <div class="lobby-player-empty">Verbinde...</div>
+        </div>
+      </div>
+      <div class="lobby-host-controls" id="lobby-host-controls"></div>
+      <div class="lobby-waiting-hint">
+        Teile den Code mit anderen Spielern, damit sie beitreten können.
+      </div>
+    </div>
+  `;
+
+  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-back')!.addEventListener('click', callbacks.onBack);
+
+  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-copy-code')!.addEventListener('click', () => {
+    navigator.clipboard.writeText(lobbyCode).then(() => showCopiedFeedback());
+  });
+
+  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-copy-link')!.addEventListener('click', () => {
+    navigator.clipboard.writeText(shareUrl).then(() => showCopiedFeedback());
+  });
+
+  function showCopiedFeedback(): void {
+    const el = groupSelectorEl.querySelector<HTMLDivElement>('#lobby-copied')!;
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.add('hidden'), 2000);
+  }
+}
+
+export function updateLobbyPlayerList(players: LobbyPlayerDisplayInfo[], isCurrentPlayerHost: boolean, onStartGame: () => void): void {
+  const listEl = groupSelectorEl.querySelector<HTMLDivElement>('#lobby-player-list');
+  if (!listEl) return;
+
+  if (players.length === 0) {
+    listEl.innerHTML = `<div class="lobby-player-empty">Keine Spieler</div>`;
+  } else {
+    listEl.innerHTML = players.map(p => `
+      <div class="lobby-player-item">
+        <div class="lobby-player-avatar">${escapeHtml(p.displayName.charAt(0).toUpperCase())}</div>
+        <div class="lobby-player-name">${escapeHtml(p.displayName)}</div>
+        ${p.isHost ? '<div class="lobby-player-host-badge">Host</div>' : ''}
+      </div>
+    `).join('');
+  }
+
+  const controlsEl = groupSelectorEl.querySelector<HTMLDivElement>('#lobby-host-controls');
+  if (!controlsEl) return;
+
+  if (isCurrentPlayerHost) {
+    controlsEl.innerHTML = `<button class="primary lobby-start-btn" id="btn-start-game">Spiel starten</button>`;
+    controlsEl.querySelector<HTMLButtonElement>('#btn-start-game')!.addEventListener('click', onStartGame);
+  } else {
+    controlsEl.innerHTML = `<div class="lobby-waiting-for-host">Warte auf den Host...</div>`;
+  }
+}
+
+export interface MultiplayerGameCallbacks {
+  onCellClick: (index: number) => void;
+  onBack: () => void;
+  onRestart: () => void;
+}
+
+export function showMultiplayerGameView(
+  state: BingoState,
+  players: MultiplayerPlayerInfo[],
+  currentPlayerId: string,
+  lobbyCode: string,
+  callbacks: MultiplayerGameCallbacks,
+): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+
+  const isHost = players.some(p => p.playerId === currentPlayerId && p.isHost);
+
+  groupSelectorEl.innerHTML = `
+    <div class="mp-game">
+      <div class="mp-game-header">
+        <button class="back-link" id="mp-btn-back">\u2190 Lobby verlassen</button>
+        <div class="mp-lobby-code">Lobby: <span class="mp-lobby-code-value">${escapeHtml(lobbyCode)}</span></div>
+      </div>
+      <div class="mp-layout">
+        <div class="mp-board-area">
+          <div class="counter">Markiert: <span id="mp-count">0</span> / 24 &nbsp;|&nbsp; Bingos: <span id="mp-bingos">0</span></div>
+          <div class="bingo-banner" id="mp-bingo-banner">BINGO!</div>
+          <div class="bingo-sub" id="mp-bingo-sub"></div>
+          <div class="board" id="mp-board"></div>
+          ${isHost ? '<div class="mp-host-controls"><button class="primary" id="mp-btn-restart">\u27f3 Neue Runde</button></div>' : ''}
+        </div>
+        <div class="mp-sidebar">
+          <div class="mp-sidebar-title">Spieler</div>
+          <div class="mp-player-list" id="mp-player-list"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const mpBoardEl = groupSelectorEl.querySelector<HTMLDivElement>('#mp-board')!;
+  mpBoardEl.addEventListener('click', (e) => {
+    const cell = (e.target as HTMLElement).closest<HTMLElement>('.cell');
+    if (!cell) return;
+    const index = Number(cell.dataset.index);
+    if (!isFreeSpace(index)) {
+      callbacks.onCellClick(index);
+    }
+  });
+
+  groupSelectorEl.querySelector<HTMLButtonElement>('#mp-btn-back')!.addEventListener('click', callbacks.onBack);
+  groupSelectorEl.querySelector<HTMLButtonElement>('#mp-btn-restart')?.addEventListener('click', callbacks.onRestart);
+
+  renderMultiplayerBoard(state);
+  updateMultiplayerPlayers(players, currentPlayerId);
+}
+
+export function renderMultiplayerBoard(state: BingoState): void {
+  const mpBoardEl = groupSelectorEl.querySelector<HTMLDivElement>('#mp-board');
+  if (!mpBoardEl) return;
+
+  mpBoardEl.innerHTML = '';
+
+  for (let i = 0; i < state.board.length; i++) {
+    const phrase = state.board[i];
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.index = String(i);
+
+    if (isFreeSpace(i)) cell.classList.add('free');
+    if (state.marked.has(i)) cell.classList.add('marked');
+    if (state.bingoIndexes.has(i)) cell.classList.add('bingo-line');
+
+    const text = document.createElement('div');
+    text.className = 'cell-text';
+    text.textContent = phrase;
+
+    const check = document.createElement('span');
+    check.className = 'check';
+    check.textContent = '\u2713';
+
+    cell.appendChild(text);
+    cell.appendChild(check);
+    mpBoardEl.appendChild(cell);
+  }
+
+  updateMultiplayerStatus(state);
+}
+
+export function updateMultiplayerCell(state: BingoState, index: number): void {
+  const mpBoardEl = groupSelectorEl.querySelector<HTMLDivElement>('#mp-board');
+  if (!mpBoardEl) return;
+
+  const cell = mpBoardEl.querySelector<HTMLElement>(`[data-index="${index}"]`);
+  if (!cell) return;
+  cell.classList.toggle('marked', state.marked.has(index));
+  cell.classList.toggle('bingo-line', state.bingoIndexes.has(index));
+
+  for (let i = 0; i < state.board.length; i++) {
+    if (i === index) continue;
+    const otherCell = mpBoardEl.querySelector<HTMLElement>(`[data-index="${i}"]`);
+    if (!otherCell) continue;
+    otherCell.classList.toggle('bingo-line', state.bingoIndexes.has(i));
+  }
+
+  updateMultiplayerStatus(state);
+}
+
+function updateMultiplayerStatus(state: BingoState): void {
+  const countEl = groupSelectorEl.querySelector<HTMLSpanElement>('#mp-count');
+  const bingosEl = groupSelectorEl.querySelector<HTMLSpanElement>('#mp-bingos');
+  if (countEl) countEl.textContent = String(getMarkedCount(state));
+  if (bingosEl) bingosEl.textContent = String(state.bingoCount);
+
+  const bannerEl = groupSelectorEl.querySelector<HTMLDivElement>('#mp-bingo-banner');
+  const bannerSubEl = groupSelectorEl.querySelector<HTMLDivElement>('#mp-bingo-sub');
+  const hasBingo = state.bingoCount > 0;
+  if (bannerEl) bannerEl.classList.toggle('visible', hasBingo);
+  if (bannerSubEl) bannerSubEl.classList.toggle('visible', hasBingo);
+}
+
+export function updateMultiplayerPlayers(players: MultiplayerPlayerInfo[], currentPlayerId: string): void {
+  const listEl = groupSelectorEl.querySelector<HTMLDivElement>('#mp-player-list');
+  if (!listEl) return;
+
+  const sorted = [...players].sort((a, b) => b.bingoCount - a.bingoCount || b.markedCount - a.markedCount);
+
+  listEl.innerHTML = sorted.map(p => {
+    const isSelf = p.playerId === currentPlayerId;
+    const bingoLabel = p.bingoCount > 0 ? `<span class="mp-player-bingo-count">${p.bingoCount} Bingo${p.bingoCount > 1 ? 's' : ''}</span>` : '';
+    return `
+      <div class="mp-player-card ${isSelf ? 'mp-player-self' : ''}">
+        <div class="mp-player-info">
+          <div class="mp-player-avatar">${escapeHtml(p.displayName.charAt(0).toUpperCase())}</div>
+          <div class="mp-player-details">
+            <div class="mp-player-name">${escapeHtml(p.displayName)}${p.isHost ? ' <span class="lobby-player-host-badge">Host</span>' : ''}</div>
+            <div class="mp-player-progress-text">${p.markedCount} / 24 ${bingoLabel}</div>
+          </div>
+        </div>
+        <div class="mp-player-bar">
+          <div class="mp-player-bar-fill ${p.bingoCount > 0 ? 'mp-player-bar-bingo' : ''}" style="width: ${Math.round((p.markedCount / 24) * 100)}%"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+export function showMultiplayerBingoNotification(winnerName: string): void {
+  const overlay = document.createElement('div');
+  overlay.className = 'mp-bingo-overlay';
+  overlay.innerHTML = `
+    <div class="mp-bingo-notification">
+      <div class="mp-bingo-icon">BINGO!</div>
+      <div class="mp-bingo-winner">${escapeHtml(winnerName)}</div>
+      <div class="mp-bingo-message">hat eine Reihe geschafft!</div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  setTimeout(() => {
+    overlay.classList.add('mp-bingo-fade');
+    overlay.addEventListener('transitionend', () => overlay.remove());
+  }, 2500);
+
+  overlay.addEventListener('click', () => {
+    overlay.classList.add('mp-bingo-fade');
+    overlay.addEventListener('transitionend', () => overlay.remove());
+  });
 }
 
 export function showStaticPage(title: string, html: string, onBack: () => void): void {

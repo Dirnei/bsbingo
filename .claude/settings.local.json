@@ -5,7 +5,9 @@
       "WebSearch",
       "Bash(npx tsc:*)",
       "Bash(dotnet build:*)",
-      "Bash(docker build:*)"
+      "Bash(docker build:*)",
+      "Bash(docker compose:*)",
+      "Bash(curl:*)"
     ]
   }
 }

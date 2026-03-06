@@ -1226,3 +1226,487 @@ footer {
   font-size: 0.85rem;
   margin-bottom: 0.5rem;
 }
+
+/* Lobby Waiting Room */
+.lobby-waiting-room {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px;
+  text-align: center;
+}
+
+.lobby-waiting-room .back-link {
+  display: block;
+  text-align: left;
+  margin-bottom: 24px;
+}
+
+.lobby-waiting-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  letter-spacing: 2px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.lobby-waiting-subtitle {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 28px;
+}
+
+.lobby-code-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 28px;
+  margin-bottom: 20px;
+}
+
+.lobby-code-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.lobby-code-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: 12px;
+  color: var(--accent);
+  margin-bottom: 20px;
+  user-select: all;
+}
+
+.lobby-code-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.lobby-copy-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.lobby-copy-btn:hover {
+  background: var(--accent);
+  color: #000;
+}
+
+.lobby-copied {
+  color: var(--win);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  margin-top: 12px;
+}
+
+.lobby-waiting-hint {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  line-height: 1.6;
+}
+
+/* Player list in lobby waiting room */
+.lobby-player-section {
+  margin-bottom: 20px;
+}
+
+.lobby-player-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.lobby-player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lobby-player-empty {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  color: var(--muted);
+  padding: 12px;
+}
+
+.lobby-player-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+.lobby-player-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.lobby-player-name {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  flex: 1;
+  text-align: left;
+}
+
+.lobby-player-host-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.lobby-host-controls {
+  margin-bottom: 20px;
+}
+
+.lobby-start-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 12px 28px;
+  width: 100%;
+}
+
+.lobby-waiting-for-host {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  padding: 12px 0;
+}
+
+/* Join Lobby card on group list */
+.lobby-join-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.lobby-join-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+
+.lobby-join-form {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.lobby-join-input {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+}
+
+.lobby-join-input::placeholder {
+  color: var(--muted);
+}
+
+.lobby-join-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+#lobby-join-code {
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  max-width: 180px;
+}
+
+.lobby-join-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 10px 20px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.lobby-join-btn:hover {
+  background: var(--accent);
+  color: #000;
+}
+
+.lobby-join-error {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: #ff4444;
+  margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+  .lobby-join-form {
+    flex-direction: column;
+  }
+
+  #lobby-join-code {
+    max-width: none;
+  }
+}
+
+/* Multiplayer button on group cards */
+.group-action-multiplayer:hover {
+  border-color: #7c3aed;
+  color: #7c3aed;
+}
+
+/* Multiplayer Game View */
+.mp-game {
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.mp-game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.mp-lobby-code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+}
+
+.mp-lobby-code-value {
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 3px;
+}
+
+.mp-layout {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 24px;
+  align-items: start;
+}
+
+.mp-board-area {
+  min-width: 0;
+}
+
+.mp-board-area .board {
+  max-width: 100%;
+}
+
+.mp-host-controls {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.mp-host-controls button {
+  padding: 10px 24px;
+}
+
+.mp-sidebar {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 16px;
+}
+
+.mp-sidebar-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.mp-player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mp-player-card {
+  padding: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.mp-player-card.mp-player-self {
+  border-color: var(--accent);
+}
+
+.mp-player-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.mp-player-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.mp-player-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.mp-player-name {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mp-player-name .lobby-player-host-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  vertical-align: middle;
+}
+
+.mp-player-progress-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+.mp-player-bingo-count {
+  color: var(--win);
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.mp-player-bar {
+  height: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.mp-player-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.mp-player-bar-fill.mp-player-bar-bingo {
+  background: var(--win);
+}
+
+/* Bingo notification overlay */
+.mp-bingo-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1200;
+  opacity: 1;
+  transition: opacity 0.5s;
+  cursor: pointer;
+}
+
+.mp-bingo-overlay.mp-bingo-fade {
+  opacity: 0;
+}
+
+.mp-bingo-notification {
+  text-align: center;
+  animation: bannerPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.mp-bingo-icon {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 72px;
+  letter-spacing: 8px;
+  color: var(--win);
+  margin-bottom: 12px;
+}
+
+.mp-bingo-winner {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 28px;
+  color: var(--text);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.mp-bingo-message {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+@media (max-width: 720px) {
+  .mp-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .mp-sidebar {
+    order: -1;
+  }
+}
