@@ -21,6 +21,13 @@ export interface ChatMessageInfo {
   timestamp: number;
 }
 
+export interface MarkHistoryEntry {
+  playerId: string;
+  displayName: string;
+  word: string;
+  timestamp: number;
+}
+
 export interface RenderCallbacks {
   onCellClick: (index: number) => void;
   onNewGame: () => void;
@@ -956,6 +963,7 @@ export function showSpectatorView(
       <div class="mp-sidebar" style="max-width: 480px; margin: 0 auto;">
         <div class="mp-sidebar-title">Spieler</div>
         <div class="mp-player-list" id="mp-player-list"></div>
+        ${markHistoryHtml()}
         ${chatHtml()}
       </div>
     </div>
@@ -1000,6 +1008,7 @@ export function showMultiplayerGameView(
         <div class="mp-sidebar">
           <div class="mp-sidebar-title">Spieler</div>
           <div class="mp-player-list" id="mp-player-list"></div>
+          ${markHistoryHtml()}
           ${chatHtml()}
         </div>
       </div>
@@ -1137,6 +1146,62 @@ export function showMultiplayerBingoNotification(winnerName: string): void {
     overlay.classList.add('mp-bingo-fade');
     overlay.addEventListener('transitionend', () => overlay.remove());
   });
+}
+
+function markHistoryHtml(): string {
+  return `
+    <div class="mark-history-panel" id="mark-history-panel">
+      <div class="mark-history-title">Verlauf</div>
+      <div class="mark-history-list" id="mark-history-list">
+        <div class="mark-history-empty">Noch keine Wörter markiert.</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderHistoryItem(e: MarkHistoryEntry, isLatest: boolean): string {
+  return `
+    <div class="mark-history-item ${isLatest ? 'mark-history-latest' : ''}">
+      <span class="mark-history-word">${escapeHtml(e.word)}</span>
+      <span class="mark-history-player">${escapeHtml(e.displayName)}</span>
+    </div>
+  `;
+}
+
+export function renderMarkHistory(entries: MarkHistoryEntry[]): void {
+  const listEl = document.querySelector<HTMLDivElement>('#mark-history-list');
+  if (!listEl) return;
+
+  if (entries.length === 0) {
+    listEl.innerHTML = '<div class="mark-history-empty">Noch keine Wörter markiert.</div>';
+    return;
+  }
+
+  listEl.innerHTML = [...entries].reverse().map((e, i) => renderHistoryItem(e, i === 0)).join('');
+}
+
+export function appendMarkHistory(entry: MarkHistoryEntry): void {
+  const listEl = document.querySelector<HTMLDivElement>('#mark-history-list');
+  if (!listEl) return;
+
+  const emptyEl = listEl.querySelector('.mark-history-empty');
+  if (emptyEl) emptyEl.remove();
+
+  // Demote previous latest
+  const prev = listEl.querySelector('.mark-history-latest');
+  if (prev) prev.classList.remove('mark-history-latest');
+
+  const el = document.createElement('div');
+  el.className = 'mark-history-item mark-history-latest';
+  el.innerHTML = `
+    <span class="mark-history-word">${escapeHtml(entry.word)}</span>
+    <span class="mark-history-player">${escapeHtml(entry.displayName)}</span>
+  `;
+  listEl.prepend(el);
+}
+
+export function showCellSelectedToast(displayName: string, word: string): void {
+  showToast(`${displayName}: "${word}"`);
 }
 
 function chatHtml(): string {

@@ -10,8 +10,9 @@ import {
   showMultiplayerGameView, renderMultiplayerBoard, updateMultiplayerCell,
   updateMultiplayerPlayers, showMultiplayerBingoNotification,
   bindChatListeners, appendChatMessage, showSpectatorView,
+  renderMarkHistory, appendMarkHistory, showCellSelectedToast,
 } from './renderer.ts';
-import type { GroupDisplayInfo, MultiplayerPlayerInfo, ChatMessageInfo } from './renderer.ts';
+import type { GroupDisplayInfo, MultiplayerPlayerInfo, ChatMessageInfo, MarkHistoryEntry } from './renderer.ts';
 import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn, starGroup, unstarGroup, createLobby } from './api.ts';
 import type { UserInfo } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
@@ -29,6 +30,7 @@ let lobbyBoard: { index: number; text: string; isFreeSpace: boolean }[] | null =
 let lobbyMarkedCells: number[] | null = null;
 let lobbyGameStarted = false;
 let lobbyIsSpectator = false;
+let lobbyMarkHistory: MarkHistoryEntry[] = [];
 let lobbyCode: string | null = null;
 let multiplayerState: BingoState | null = null;
 let serverHealthInterval: ReturnType<typeof setInterval> | null = null;
@@ -216,6 +218,7 @@ function closeLobbyWebSocket(): void {
   lobbyMarkedCells = null;
   lobbyGameStarted = false;
   lobbyIsSpectator = false;
+  lobbyMarkHistory = [];
   lobbyCode = null;
   multiplayerState = null;
 }
@@ -258,6 +261,7 @@ function startMultiplayerGame(): void {
     },
     onRestart: () => sendLobbyMessage('game:restart'),
   });
+  renderMarkHistory(lobbyMarkHistory);
   bindChat();
 }
 
@@ -271,11 +275,13 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
         isSpectator: boolean;
         board?: { index: number; text: string; isFreeSpace: boolean }[];
         markedCells?: number[];
+        markHistory?: MarkHistoryEntry[];
       } | undefined;
       if (!payload) break;
       lobbyCurrentPlayerId = payload.currentPlayerId;
       lobbyPlayers = payload.players;
       lobbyIsSpectator = payload.isSpectator;
+      lobbyMarkHistory = payload.markHistory ?? [];
       if (payload.board) lobbyBoard = payload.board;
       if (payload.markedCells) lobbyMarkedCells = payload.markedCells;
 
@@ -286,6 +292,7 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
             closeLobbyWebSocket();
             navigate('/groups');
           });
+          renderMarkHistory(lobbyMarkHistory);
           bindChat();
         }
       } else if (payload.gameStarted && !lobbyGameStarted) {
@@ -341,6 +348,19 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       if (player) player.markedCount = payload.markedCount;
       if (lobbyGameStarted || lobbyIsSpectator) {
         updateMultiplayerPlayers(lobbyPlayers, lobbyCurrentPlayerId ?? '');
+      }
+      break;
+    }
+    case 'cell:selected': {
+      const payload = msg.payload as { playerId: string; displayName: string; word: string; timestamp: number } | undefined;
+      if (!payload) break;
+      // Check if this word is new to the history
+      if (!lobbyMarkHistory.some(e => e.word.toLowerCase() === payload.word.toLowerCase())) {
+        lobbyMarkHistory.push(payload);
+        appendMarkHistory(payload);
+      }
+      if (payload.playerId !== lobbyCurrentPlayerId) {
+        showCellSelectedToast(payload.displayName, payload.word);
       }
       break;
     }

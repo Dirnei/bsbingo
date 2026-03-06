@@ -1721,6 +1721,89 @@ img.mp-player-avatar {
   letter-spacing: 1px;
 }
 
+/* Mark history panel */
+.mark-history-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 16px;
+  overflow: hidden;
+}
+
+.mark-history-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  padding: 10px 12px 6px;
+}
+
+.mark-history-list {
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 4px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mark-history-empty {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 4px 0;
+}
+
+.mark-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.mark-history-item:last-child {
+  border-bottom: none;
+}
+
+.mark-history-latest {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-radius: 4px;
+  padding: 6px 8px;
+  border-bottom: none;
+}
+
+.mark-history-latest .mark-history-word {
+  font-size: 14px;
+  color: var(--accent);
+}
+
+.mark-history-latest .mark-history-player {
+  font-size: 12px;
+}
+
+.mark-history-word {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mark-history-player {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* Chat panel */
 .chat-panel {
   display: flex;

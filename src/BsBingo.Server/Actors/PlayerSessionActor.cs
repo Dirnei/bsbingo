@@ -38,6 +38,7 @@ public sealed class PlayerSessionActor : ReceiveActor
         Receive<PlayerLeft>(msg => SendToWebSocket("player:left", msg));
         Receive<GameStarted>(_ => SendToWebSocket("game:start", new { }));
         Receive<ProgressUpdate>(msg => SendToWebSocket("player:progress", msg));
+        Receive<CellSelected>(msg => SendToWebSocket("cell:selected", msg));
         Receive<PlayerBingo>(msg => SendToWebSocket("player:bingo", msg));
         Receive<GameRestarted>(_ => SendToWebSocket("game:restart", new { }));
         Receive<ChatMessage>(msg => SendToWebSocket("chat:message", msg));

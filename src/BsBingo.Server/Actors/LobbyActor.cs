@@ -23,6 +23,8 @@ public sealed class LobbyActor : ReceiveActor
     private readonly string _groupId;
     private readonly List<string> _words;
     private readonly Dictionary<string, PlayerState> _players = new();
+    private readonly List<MarkHistoryEntry> _markHistory = new();
+    private readonly HashSet<string> _markedWords = new(StringComparer.OrdinalIgnoreCase);
     private string? _hostPlayerId;
     private bool _gameStarted;
 
@@ -79,7 +81,8 @@ public sealed class LobbyActor : ReceiveActor
             _gameStarted,
             playerState.IsSpectator,
             playerState.IsSpectator ? null : playerState.Board,
-            playerState.IsSpectator ? null : playerState.MarkedCells));
+            playerState.IsSpectator ? null : playerState.MarkedCells,
+            _markHistory));
 
         // Broadcast player joined to all other players
         BroadcastExcept(new PlayerJoined(msg.PlayerId, msg.DisplayName, playerState.GravatarHash), msg.PlayerId);
@@ -131,7 +134,8 @@ public sealed class LobbyActor : ReceiveActor
                 _gameStarted,
                 player.IsSpectator,
                 player.Board,
-                player.MarkedCells));
+                player.MarkedCells,
+                _markHistory));
         }
     }
 
@@ -150,12 +154,27 @@ public sealed class LobbyActor : ReceiveActor
             return;
 
         // Toggle the mark
-        if (!player.MarkedCells.Add(msg.CellIndex))
+        var isMarking = player.MarkedCells.Add(msg.CellIndex);
+        if (!isMarking)
             player.MarkedCells.Remove(msg.CellIndex);
 
         // Broadcast progress (marked count excludes free space)
         var markedCount = player.MarkedCells.Count - 1;
         Broadcast(new ProgressUpdate(msg.PlayerId, markedCount));
+
+        // When marking (not unmarking), broadcast the selected word
+        if (isMarking)
+        {
+            var word = player.Board[msg.CellIndex].Text;
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            Broadcast(new CellSelected(msg.PlayerId, player.DisplayName, word, timestamp));
+
+            // Track first-time word selections
+            if (_markedWords.Add(word))
+            {
+                _markHistory.Add(new MarkHistoryEntry(msg.PlayerId, player.DisplayName, word, timestamp));
+            }
+        }
 
         // Check all 12 lines for newly completed bingos and lines that became incomplete
         var newBingos = new List<(int LineIndex, int[] Line)>();
@@ -201,6 +220,8 @@ public sealed class LobbyActor : ReceiveActor
         }
 
         _gameStarted = false;
+        _markHistory.Clear();
+        _markedWords.Clear();
         Broadcast(new GameRestarted());
 
         // Send each player their new board via full lobby state
@@ -214,7 +235,8 @@ public sealed class LobbyActor : ReceiveActor
                 _gameStarted,
                 false,
                 player.Board,
-                player.MarkedCells));
+                player.MarkedCells,
+                _markHistory));
         }
     }
 
