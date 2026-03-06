@@ -21,7 +21,7 @@ cd src/BsBingo.Server
 dotnet run
 ```
 
-The API runs at **http://localhost:8081**.
+The API runs at **http://localhost:8080**.
 
 ### 3. Start the Frontend
 

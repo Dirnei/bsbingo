@@ -4,7 +4,8 @@
       "WebFetch(domain:github.com)",
       "WebSearch",
       "Bash(npx tsc:*)",
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build:*)",
+      "Bash(docker build:*)"
     ]
   }
 }

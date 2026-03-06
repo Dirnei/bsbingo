@@ -68,19 +68,34 @@ builder.Services.AddAuthentication(options =>
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
         };
     })
-    .AddGitHub(GitHubAuthenticationDefaults.AuthenticationScheme, options =>
-    {
-        options.ClientId = builder.Configuration.GetValue<string>("OAuth:GitHub:ClientId") ?? "";
-        options.ClientSecret = builder.Configuration.GetValue<string>("OAuth:GitHub:ClientSecret") ?? "";
-        options.Scope.Add("user:email");
-        options.CallbackPath = "/api/auth/callback/github";
-    })
-    .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
-    {
-        options.ClientId = builder.Configuration.GetValue<string>("OAuth:Google:ClientId") ?? "";
-        options.ClientSecret = builder.Configuration.GetValue<string>("OAuth:Google:ClientSecret") ?? "";
-        options.CallbackPath = "/api/auth/callback/google";
-    });
+    ;
+
+var githubClientId = builder.Configuration.GetValue<string>("OAuth:GitHub:ClientId");
+var githubClientSecret = builder.Configuration.GetValue<string>("OAuth:GitHub:ClientSecret");
+if (!string.IsNullOrEmpty(githubClientId) && !string.IsNullOrEmpty(githubClientSecret))
+{
+    builder.Services.AddAuthentication()
+        .AddGitHub(GitHubAuthenticationDefaults.AuthenticationScheme, options =>
+        {
+            options.ClientId = githubClientId;
+            options.ClientSecret = githubClientSecret;
+            options.Scope.Add("user:email");
+            options.CallbackPath = "/api/auth/callback/github";
+        });
+}
+
+var googleClientId = builder.Configuration.GetValue<string>("OAuth:Google:ClientId");
+var googleClientSecret = builder.Configuration.GetValue<string>("OAuth:Google:ClientSecret");
+if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
+{
+    builder.Services.AddAuthentication()
+        .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
+        {
+            options.ClientId = googleClientId;
+            options.ClientSecret = googleClientSecret;
+            options.CallbackPath = "/api/auth/callback/google";
+        });
+}
 
 builder.Services.AddAuthorization();
 
@@ -193,13 +208,7 @@ app.MapGet("/api/auth/token", async (HttpContext context, IConfiguration config,
     var jwt = new JwtSecurityTokenHandler().WriteToken(token);
 
     // Redirect to frontend with token as query parameter
-    var frontendUrl = config["FrontendUrl"]?.TrimEnd('/');
-    if (string.IsNullOrEmpty(frontendUrl))
-    {
-        var request = context.Request;
-        frontendUrl = $"{request.Scheme}://{request.Host}";
-    }
-    var redirectUrl = $"{frontendUrl}/#/auth/callback?token={jwt}";
+    var redirectUrl = $"/#/auth/callback?token={jwt}";
     return Results.Redirect(redirectUrl);
 });
 
