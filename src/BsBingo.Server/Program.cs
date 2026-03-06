@@ -109,8 +109,10 @@ app.UseAuthorization();
 
 var askTimeout = TimeSpan.FromSeconds(5);
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.MapHealthChecks("/healthz");
-app.MapGet("/", () => Results.Redirect("/healthz"));
 
 // --- Auth endpoints ---
 
@@ -384,6 +386,8 @@ app.MapPost("/api/game/new", async (string groupId, IRequiredActor<GameActor> ga
     var board = await gameActor.ActorRef.Ask<Board?>(new NewGame(groupId), askTimeout);
     return board is null ? Results.NotFound() : Results.Ok(board);
 });
+
+app.MapFallbackToFile("index.html");
 
 app.Run();
 

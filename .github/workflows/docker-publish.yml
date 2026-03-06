@@ -1,4 +1,4 @@
-name: Build & Push Docker Images
+name: Build & Push Docker Image
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/bsbingo
 
 jobs:
   build-and-push:
@@ -16,16 +17,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-
-    strategy:
-      matrix:
-        include:
-          - name: client
-            context: ./client
-            dockerfile: client/Dockerfile
-          - name: server
-            context: .
-            dockerfile: src/BsBingo.Server/Dockerfile
 
     steps:
       - name: Checkout repository
@@ -45,7 +36,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/bsbingo-${{ matrix.name }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=semver,pattern={{version}}
@@ -54,8 +45,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
+          context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

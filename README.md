@@ -43,7 +43,6 @@ All settings are configured via environment variables in `docker-compose.ghcr.ym
 |---|---|---|
 | `MongoDB__ConnectionString` | MongoDB connection string | `mongodb://root:example@mongodb:27017/?authSource=admin` |
 | `MongoDB__Database` | Database name | `bsbingo` |
-| `FrontendUrl` | Public URL of the frontend (for CORS) | `http://localhost:8080` |
 
 #### OAuth (optional)
 
@@ -51,10 +50,10 @@ To enable GitHub / Google login, uncomment and fill in the OAuth variables in th
 
 | Variable | Description |
 |---|---|
-| `Auth__GitHub__ClientId` | GitHub OAuth App client ID |
-| `Auth__GitHub__ClientSecret` | GitHub OAuth App client secret |
-| `Auth__Google__ClientId` | Google OAuth client ID |
-| `Auth__Google__ClientSecret` | Google OAuth client secret |
+| `OAuth__GitHub__ClientId` | GitHub OAuth App client ID |
+| `OAuth__GitHub__ClientSecret` | GitHub OAuth App client secret |
+| `OAuth__Google__ClientId` | Google OAuth client ID |
+| `OAuth__Google__ClientSecret` | Google OAuth client secret |
 
 ### Updating
 
