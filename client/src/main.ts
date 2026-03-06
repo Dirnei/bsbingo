@@ -9,8 +9,9 @@ import {
   showLobbyWaitingRoom, updateLobbyPlayerList, showNamePrompt,
   showMultiplayerGameView, renderMultiplayerBoard, updateMultiplayerCell,
   updateMultiplayerPlayers, showMultiplayerBingoNotification,
+  bindChatListeners, appendChatMessage,
 } from './renderer.ts';
-import type { GroupDisplayInfo, MultiplayerPlayerInfo } from './renderer.ts';
+import type { GroupDisplayInfo, MultiplayerPlayerInfo, ChatMessageInfo } from './renderer.ts';
 import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn, starGroup, unstarGroup, createLobby } from './api.ts';
 import type { UserInfo } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
@@ -201,6 +202,10 @@ function sendLobbyMessage(type: string, payload?: Record<string, unknown>): void
   }
 }
 
+function bindChat(): void {
+  bindChatListeners(document.body, (text) => sendLobbyMessage('chat:message', { text }));
+}
+
 function refreshLobbyUI(): void {
   if (lobbyGameStarted && multiplayerState) {
     updateMultiplayerPlayers(lobbyPlayers, lobbyCurrentPlayerId ?? '');
@@ -229,6 +234,7 @@ function startMultiplayerGame(): void {
     },
     onRestart: () => sendLobbyMessage('game:restart'),
   });
+  bindChat();
 }
 
 function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknown> }): void {
@@ -258,6 +264,7 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
             onBack: () => { closeLobbyWebSocket(); navigate('/groups'); },
             onStartGame: () => sendLobbyMessage('game:start'),
           });
+          bindChat();
         }
         refreshLobbyUI();
       } else if (lobbyGameStarted && lobbyBoard) {
@@ -271,10 +278,10 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       break;
     }
     case 'player:joined': {
-      const payload = msg.payload as { playerId: string; displayName: string } | undefined;
+      const payload = msg.payload as { playerId: string; displayName: string; gravatarHash?: string | null } | undefined;
       if (!payload) break;
       if (!lobbyPlayers.some(p => p.playerId === payload.playerId)) {
-        lobbyPlayers.push({ playerId: payload.playerId, displayName: payload.displayName, isHost: false, markedCount: 0, bingoCount: 0 });
+        lobbyPlayers.push({ playerId: payload.playerId, displayName: payload.displayName, isHost: false, markedCount: 0, bingoCount: 0, gravatarHash: payload.gravatarHash });
       }
       refreshLobbyUI();
       break;
@@ -320,6 +327,12 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       multiplayerState = null;
       break;
     }
+    case 'chat:message': {
+      const payload = msg.payload as ChatMessageInfo | undefined;
+      if (!payload) break;
+      appendChatMessage(payload, lobbyCurrentPlayerId ?? '');
+      break;
+    }
     case 'lobby:expired': {
       showToast('Die Lobby ist abgelaufen.');
       closeLobbyWebSocket();
@@ -351,7 +364,9 @@ function connectToLobby(code: string, displayName: string): void {
   lobbyWebSocket = ws;
 
   ws.addEventListener('open', () => {
-    ws.send(JSON.stringify({ type: 'lobby:join', payload: { displayName } }));
+    const payload: { displayName: string; email?: string } = { displayName };
+    if (currentUser?.email) payload.email = currentUser.email;
+    ws.send(JSON.stringify({ type: 'lobby:join', payload }));
   });
 
   ws.addEventListener('message', (event) => {
@@ -449,6 +464,7 @@ registerRoutes([
           },
           onStartGame: () => sendLobbyMessage('game:start'),
         });
+        bindChat();
         connectToLobby(code, name);
       }
 

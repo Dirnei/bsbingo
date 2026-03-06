@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Akka.Actor;
 using BsBingo.Server.Messages;
 
@@ -37,6 +39,7 @@ public sealed class LobbyActor : ReceiveActor
         Receive<StartGame>(HandleStartGame);
         Receive<MarkCell>(HandleMarkCell);
         Receive<RestartGame>(HandleRestartGame);
+        Receive<SendChat>(HandleChat);
         Receive<ReceiveTimeout>(_ => HandleTimeout());
     }
 
@@ -58,7 +61,8 @@ public sealed class LobbyActor : ReceiveActor
 
             var board = GenerateBoard();
             var markedCells = new HashSet<int> { FreeIndex };
-            _players[msg.PlayerId] = new PlayerState(msg.PlayerId, msg.DisplayName, msg.PlayerSession, board, markedCells, 0, new HashSet<int>());
+            var gravatarHash = ComputeGravatarHash(msg.Email ?? msg.DisplayName);
+            _players[msg.PlayerId] = new PlayerState(msg.PlayerId, msg.DisplayName, msg.PlayerSession, board, markedCells, 0, new HashSet<int>(), gravatarHash);
 
             if (_hostPlayerId is null)
                 _hostPlayerId = msg.PlayerId;
@@ -76,7 +80,7 @@ public sealed class LobbyActor : ReceiveActor
             playerState.MarkedCells));
 
         // Broadcast player joined to all other players
-        BroadcastExcept(new PlayerJoined(msg.PlayerId, msg.DisplayName), msg.PlayerId);
+        BroadcastExcept(new PlayerJoined(msg.PlayerId, msg.DisplayName, playerState.GravatarHash), msg.PlayerId);
     }
 
     private void HandleLeave(LeaveLobby msg)
@@ -206,10 +210,30 @@ public sealed class LobbyActor : ReceiveActor
         }
     }
 
+    private void HandleChat(SendChat msg)
+    {
+        if (!_players.TryGetValue(msg.PlayerId, out var player))
+            return;
+
+        var text = msg.Text.Trim();
+        if (string.IsNullOrEmpty(text) || text.Length > 500)
+            return;
+
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        Broadcast(new ChatMessage(msg.PlayerId, player.DisplayName, player.GravatarHash, text, timestamp));
+    }
+
     private void HandleTimeout()
     {
         Broadcast(new LobbyExpired());
         Context.Stop(Self);
+    }
+
+    private static string ComputeGravatarHash(string input)
+    {
+        var normalized = input.Trim().ToLowerInvariant();
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
+        return Convert.ToHexStringLower(bytes);
     }
 
     private List<BoardCell> GenerateBoard()
@@ -237,7 +261,8 @@ public sealed class LobbyActor : ReceiveActor
             p.DisplayName,
             p.PlayerId == _hostPlayerId,
             p.MarkedCells.Count - 1, // exclude free space
-            p.BingoCount
+            p.BingoCount,
+            p.GravatarHash
         )).ToList();
     }
 
@@ -263,5 +288,6 @@ public sealed class LobbyActor : ReceiveActor
         List<BoardCell> Board,
         HashSet<int> MarkedCells,
         int BingoCount,
-        HashSet<int> CompletedLines);
+        HashSet<int> CompletedLines,
+        string? GravatarHash);
 }
