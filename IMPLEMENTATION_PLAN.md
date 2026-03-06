@@ -238,7 +238,7 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Acceptance Criteria:**
 - [x] Groups sorted by star count descending by default
 - [x] Groups with equal stars maintain stable secondary sort (e.g., by name)
-- [ ] Typecheck passes
+- [x] Typecheck passes
 
 ### US-018: Pointer cursor only on interactive elements
 **Description:** As a user, I want the pointer (hand) cursor to only appear when hovering over clickable buttons, not the entire group card.
