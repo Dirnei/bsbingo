@@ -239,11 +239,11 @@ export function showGroupList(
     groupSelectorEl.innerHTML = `
       <div class="group-list-header">
         <div class="group-selector-title">Wortgruppen</div>
-        <button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>
+        ${currentUserId ? '<button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>' : ''}
       </div>
       <div class="group-selector-status">Keine Wortgruppen gefunden.</div>
     `;
-    groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')!.addEventListener('click', callbacks.onCreate);
+    groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')?.addEventListener('click', callbacks.onCreate);
     return;
   }
 
@@ -277,7 +277,7 @@ export function showGroupList(
   groupSelectorEl.innerHTML = `
     <div class="group-list-header">
       <div class="group-selector-title">Wortgruppen</div>
-      <button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>
+      ${currentUserId ? '<button class="primary group-create-btn" id="btn-create-group">+ Neue Gruppe</button>' : ''}
     </div>
     ${builtinGroups.length > 0 ? `
       <div class="group-cards">
@@ -303,7 +303,7 @@ export function showGroupList(
   groupListAbortController = new AbortController();
   const signal = groupListAbortController.signal;
 
-  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')!.addEventListener('click', callbacks.onCreate, { signal });
+  groupSelectorEl.querySelector<HTMLButtonElement>('#btn-create-group')?.addEventListener('click', callbacks.onCreate, { signal });
 
   groupSelectorEl.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');

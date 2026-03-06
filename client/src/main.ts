@@ -132,6 +132,10 @@ registerRoutes([
   {
     pattern: '/groups/new',
     handler: () => {
+      if (!isLoggedIn()) {
+        navigate('/login');
+        return;
+      }
       showGroupCreateForm({
         onSubmit: async (data) => {
           await createGroup({ name: data.name, description: data.description, words: data.words, visibility: data.visibility });
