@@ -225,11 +225,13 @@ export interface GroupDisplayInfo {
   visibility: string;
   inviteToken: string | null;
   sharedWith: string[] | null;
+  starCount: number;
+  isStarred: boolean;
 }
 
 export function showGroupList(
   groups: GroupDisplayInfo[],
-  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void; onShare?: (id: string) => void },
+  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void; onShare?: (id: string) => void; onStar?: (id: string) => void },
   currentUserId?: string | null,
 ): void {
   groupSelectorEl.classList.remove('hidden');
@@ -255,9 +257,14 @@ export function showGroupList(
 
   function renderCard(g: GroupDisplayInfo, showOwnerActions: boolean): string {
     const isOwner = showOwnerActions && !!currentUserId && g.createdBy === currentUserId;
+    const starIcon = g.isStarred ? '★' : '☆';
+    const starClass = g.isStarred ? 'group-action-star starred' : 'group-action-star';
     return `
       <div class="group-card" data-group-id="${escapeHtml(g.id)}">
-        <div class="group-card-name">${escapeHtml(g.name)}${g.visibility === 'private' ? ' <span class="visibility-badge visibility-private">Privat</span>' : ''}</div>
+        <div class="group-card-header">
+          <div class="group-card-name">${escapeHtml(g.name)}${g.visibility === 'private' ? ' <span class="visibility-badge visibility-private">Privat</span>' : ''}</div>
+          <div class="group-card-star-count">${starIcon} ${g.starCount}</div>
+        </div>
         <div class="group-card-desc">${escapeHtml(g.description || 'Keine Beschreibung')}</div>
         <div class="group-card-meta">
           <span>${g.wordCount} Wörter</span>
@@ -265,6 +272,7 @@ export function showGroupList(
         </div>
         <div class="group-card-actions">
           <button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>
+          ${currentUserId ? `<button class="group-action-btn ${starClass}" data-action="star">${starIcon}</button>` : ''}
           ${isOwner && g.visibility === 'private' ? `<button class="group-action-btn group-action-share" data-action="share">🔗 Teilen</button>` : ''}
           ${isOwner ? `<button class="group-action-btn group-action-edit" data-action="edit">✎ Bearbeiten</button>` : ''}
           ${isOwner ? `<button class="group-action-btn group-action-delete" data-action="delete">✕ Löschen</button>` : ''}
@@ -315,6 +323,7 @@ export function showGroupList(
 
     const action = btn.dataset.action;
     if (action === 'play') callbacks.onPlay(groupId);
+    else if (action === 'star' && callbacks.onStar) callbacks.onStar(groupId);
     else if (action === 'share' && callbacks.onShare) callbacks.onShare(groupId);
     else if (action === 'edit') callbacks.onEdit(groupId);
     else if (action === 'delete') {

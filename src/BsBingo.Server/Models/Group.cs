@@ -26,6 +26,8 @@ public sealed class Group
 
     public string? InviteToken { get; set; }
 
+    public List<string> StarredBy { get; set; } = [];
+
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public void Validate()

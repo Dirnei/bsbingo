@@ -170,5 +170,40 @@ public sealed class GroupActor : ReceiveActor
 
             Sender.Tell(new GroupResult(true, Data: existing.SharedWith));
         });
+
+        ReceiveAsync<StarGroup>(async msg =>
+        {
+            var existing = await repository.GetByIdAsync(msg.GroupId);
+            if (existing is null)
+            {
+                Sender.Tell(new GroupResult(false, Error: "Group not found"));
+                return;
+            }
+
+            if (!existing.StarredBy.Contains(msg.UserId))
+            {
+                existing.StarredBy.Add(msg.UserId);
+                await repository.UpdateAsync(existing);
+            }
+
+            Sender.Tell(new GroupResult(true, Data: existing.StarredBy.Count));
+        });
+
+        ReceiveAsync<UnstarGroup>(async msg =>
+        {
+            var existing = await repository.GetByIdAsync(msg.GroupId);
+            if (existing is null)
+            {
+                Sender.Tell(new GroupResult(false, Error: "Group not found"));
+                return;
+            }
+
+            if (existing.StarredBy.Remove(msg.UserId))
+            {
+                await repository.UpdateAsync(existing);
+            }
+
+            Sender.Tell(new GroupResult(true, Data: existing.StarredBy.Count));
+        });
     }
 }

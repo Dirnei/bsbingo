@@ -8,6 +8,8 @@ export interface GroupSummary {
   visibility: string;
   inviteToken: string | null;
   sharedWith: string[] | null;
+  starCount: number;
+  isStarred: boolean;
 }
 
 export interface BoardCell {
@@ -220,4 +222,28 @@ export async function fetchSharedUsers(groupId: string): Promise<string[]> {
   if (!res.ok) throw new Error(`Failed to fetch shared users: ${res.status}`);
   const data = await res.json();
   return data.sharedWith;
+}
+
+export async function starGroup(groupId: string): Promise<{ starCount: number }> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${BASE_URL}/groups/${encodeURIComponent(groupId)}/star`, {
+    method: 'POST',
+    headers,
+  });
+  if (!res.ok) throw new Error(`Failed to star group: ${res.status}`);
+  return res.json();
+}
+
+export async function unstarGroup(groupId: string): Promise<{ starCount: number }> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${BASE_URL}/groups/${encodeURIComponent(groupId)}/star`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!res.ok) throw new Error(`Failed to unstar group: ${res.status}`);
+  return res.json();
 }

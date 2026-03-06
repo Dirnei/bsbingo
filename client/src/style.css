@@ -582,6 +582,40 @@ button.primary:hover {
   color: #ff4444;
 }
 
+.group-action-star {
+  flex: 0 0 auto;
+}
+
+.group-action-star:hover {
+  border-color: #ffc107;
+  color: #ffc107;
+}
+
+.group-action-star.starred {
+  color: #ffc107;
+  border-color: #ffc107;
+}
+
+/* Group Card Header with star count */
+.group-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.group-card-header .group-card-name {
+  flex: 1;
+}
+
+.group-card-star-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  padding-top: 4px;
+}
+
 /* Delete Confirmation Dialog */
 .dialog-overlay {
   position: fixed;

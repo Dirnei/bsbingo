@@ -8,7 +8,7 @@ import {
   showStaticPage, showLoginPage, updateHeaderAuth, showInvitePage, showShareDialog,
 } from './renderer.ts';
 import type { GroupDisplayInfo } from './renderer.ts';
-import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn } from './api.ts';
+import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn, starGroup, unstarGroup } from './api.ts';
 import type { UserInfo } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
 
@@ -79,6 +79,20 @@ function showGroupListWithActions(): void {
         });
       } catch (err) {
         showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen des Einladungslinks');
+      }
+    },
+    onStar: async (id) => {
+      const group = cachedGroups.find(g => g.id === id);
+      if (!group) return;
+      try {
+        const result = group.isStarred
+          ? await unstarGroup(id)
+          : await starGroup(id);
+        group.isStarred = !group.isStarred;
+        group.starCount = result.starCount;
+        showGroupListWithActions();
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Fehler');
       }
     },
   }, currentUser?.id);

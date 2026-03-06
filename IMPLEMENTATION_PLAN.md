@@ -225,12 +225,12 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As a logged-in user, I want to star/unstar community groups so I can mark my favorites.
 
 **Acceptance Criteria:**
-- [ ] Star icon shown on each group card for logged-in users
-- [ ] Clicking the star toggles it (starred/unstarred)
-- [ ] Star state persisted per user in the database
-- [ ] `POST /api/groups/{id}/star` and `DELETE /api/groups/{id}/star` endpoints
-- [ ] Star count visible on the group card
-- [ ] Typecheck passes
+- [x] Star icon shown on each group card for logged-in users
+- [x] Clicking the star toggles it (starred/unstarred)
+- [x] Star state persisted per user in the database
+- [x] `POST /api/groups/{id}/star` and `DELETE /api/groups/{id}/star` endpoints
+- [x] Star count visible on the group card
+- [x] Typecheck passes
 
 ### US-017: Sort groups by star count
 **Description:** As a user, I want the group list sorted so that popular (most-starred) groups appear first.
