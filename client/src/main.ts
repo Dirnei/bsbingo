@@ -9,7 +9,7 @@ import {
   showLobbyWaitingRoom, updateLobbyPlayerList, showNamePrompt,
   showMultiplayerGameView, renderMultiplayerBoard, updateMultiplayerCell,
   updateMultiplayerPlayers, showMultiplayerBingoNotification,
-  bindChatListeners, appendChatMessage,
+  bindChatListeners, appendChatMessage, showSpectatorView,
 } from './renderer.ts';
 import type { GroupDisplayInfo, MultiplayerPlayerInfo, ChatMessageInfo } from './renderer.ts';
 import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn, starGroup, unstarGroup, createLobby } from './api.ts';
@@ -28,6 +28,7 @@ let lobbyCurrentPlayerId: string | null = null;
 let lobbyBoard: { index: number; text: string; isFreeSpace: boolean }[] | null = null;
 let lobbyMarkedCells: number[] | null = null;
 let lobbyGameStarted = false;
+let lobbyIsSpectator = false;
 let lobbyCode: string | null = null;
 let multiplayerState: BingoState | null = null;
 
@@ -192,6 +193,7 @@ function closeLobbyWebSocket(): void {
   lobbyBoard = null;
   lobbyMarkedCells = null;
   lobbyGameStarted = false;
+  lobbyIsSpectator = false;
   lobbyCode = null;
   multiplayerState = null;
 }
@@ -244,16 +246,27 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
         currentPlayerId: string;
         players: MultiplayerPlayerInfo[];
         gameStarted: boolean;
+        isSpectator: boolean;
         board?: { index: number; text: string; isFreeSpace: boolean }[];
         markedCells?: number[];
       } | undefined;
       if (!payload) break;
       lobbyCurrentPlayerId = payload.currentPlayerId;
       lobbyPlayers = payload.players;
+      lobbyIsSpectator = payload.isSpectator;
       if (payload.board) lobbyBoard = payload.board;
       if (payload.markedCells) lobbyMarkedCells = payload.markedCells;
 
-      if (payload.gameStarted && !lobbyGameStarted) {
+      if (payload.gameStarted && lobbyIsSpectator) {
+        // Joined after game started — spectator mode
+        if (lobbyCode) {
+          showSpectatorView(lobbyPlayers, lobbyCurrentPlayerId, lobbyCode, () => {
+            closeLobbyWebSocket();
+            navigate('/groups');
+          });
+          bindChat();
+        }
+      } else if (payload.gameStarted && !lobbyGameStarted) {
         startMultiplayerGame();
       } else if (!payload.gameStarted && lobbyGameStarted) {
         // Game was restarted — back to waiting room, new board will come
@@ -304,7 +317,7 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       if (!payload) break;
       const player = lobbyPlayers.find(p => p.playerId === payload.playerId);
       if (player) player.markedCount = payload.markedCount;
-      if (lobbyGameStarted) {
+      if (lobbyGameStarted || lobbyIsSpectator) {
         updateMultiplayerPlayers(lobbyPlayers, lobbyCurrentPlayerId ?? '');
       }
       break;
@@ -314,7 +327,7 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       if (!payload) break;
       const bingoPlayer = lobbyPlayers.find(p => p.playerId === payload.playerId);
       if (bingoPlayer) bingoPlayer.bingoCount++;
-      if (lobbyGameStarted) {
+      if (lobbyGameStarted || lobbyIsSpectator) {
         updateMultiplayerPlayers(lobbyPlayers, lobbyCurrentPlayerId ?? '');
       }
       showMultiplayerBingoNotification(payload.displayName);
@@ -379,13 +392,14 @@ function connectToLobby(code: string, displayName: string): void {
   });
 
   ws.addEventListener('close', () => {
-    lobbyWebSocket = null;
+    if (lobbyWebSocket === ws) lobbyWebSocket = null;
+    showToast('Verbindung zum Server verloren.');
+    closeLobbyWebSocket();
+    navigate('/groups');
   });
 
   ws.addEventListener('error', () => {
-    showToast('Verbindung zur Lobby fehlgeschlagen. Code ungültig oder Lobby abgelaufen.');
-    lobbyWebSocket = null;
-    navigate('/groups');
+    // The close event will fire after error, which handles navigation
   });
 }
 

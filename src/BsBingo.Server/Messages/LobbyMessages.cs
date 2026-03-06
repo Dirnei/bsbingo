@@ -26,10 +26,11 @@ public sealed record LobbyState(
     string CurrentPlayerId,
     List<LobbyPlayerInfo> Players,
     bool GameStarted,
+    bool IsSpectator,
     List<BoardCell>? Board,
     HashSet<int>? MarkedCells);
 
-public sealed record LobbyPlayerInfo(string PlayerId, string DisplayName, bool IsHost, int MarkedCount, int BingoCount, string? GravatarHash);
+public sealed record LobbyPlayerInfo(string PlayerId, string DisplayName, bool IsHost, int MarkedCount, int BingoCount, string? GravatarHash, bool IsSpectator);
 
 public sealed record PlayerJoined(string PlayerId, string DisplayName, string? GravatarHash);
 public sealed record PlayerLeft(string PlayerId, string DisplayName);

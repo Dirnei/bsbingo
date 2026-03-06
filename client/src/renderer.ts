@@ -939,6 +939,34 @@ export function updateLobbyPlayerList(players: LobbyPlayerDisplayInfo[], isCurre
   }
 }
 
+export function showSpectatorView(
+  players: MultiplayerPlayerInfo[],
+  currentPlayerId: string,
+  lobbyCode: string,
+  onBack: () => void,
+): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+
+  groupSelectorEl.innerHTML = `
+    <div class="mp-game">
+      <div class="mp-game-header">
+        <button class="back-link" id="mp-btn-back">\u2190 Lobby verlassen</button>
+        <div class="mp-lobby-code">Lobby: <span class="mp-lobby-code-value">${escapeHtml(lobbyCode)}</span></div>
+      </div>
+      <div class="spectator-notice">Du schaust dem Spiel zu. Bei der nächsten Runde bist du dabei!</div>
+      <div class="mp-sidebar" style="max-width: 480px; margin: 0 auto;">
+        <div class="mp-sidebar-title">Spieler</div>
+        <div class="mp-player-list" id="mp-player-list"></div>
+        ${chatHtml()}
+      </div>
+    </div>
+  `;
+
+  groupSelectorEl.querySelector<HTMLButtonElement>('#mp-btn-back')!.addEventListener('click', onBack);
+  updateMultiplayerPlayers(players, currentPlayerId);
+}
+
 export interface MultiplayerGameCallbacks {
   onCellClick: (index: number) => void;
   onBack: () => void;

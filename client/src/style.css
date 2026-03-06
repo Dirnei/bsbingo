@@ -1520,6 +1520,18 @@ img.lobby-player-avatar {
   margin-bottom: 20px;
 }
 
+.spectator-notice {
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  color: var(--accent);
+  text-align: center;
+}
+
 .mp-lobby-code {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 12px;

@@ -62,7 +62,8 @@ public sealed class LobbyActor : ReceiveActor
             var board = GenerateBoard();
             var markedCells = new HashSet<int> { FreeIndex };
             var gravatarHash = ComputeGravatarHash(msg.Email ?? msg.DisplayName);
-            _players[msg.PlayerId] = new PlayerState(msg.PlayerId, msg.DisplayName, msg.PlayerSession, board, markedCells, 0, new HashSet<int>(), gravatarHash);
+            var isSpectator = _gameStarted;
+            _players[msg.PlayerId] = new PlayerState(msg.PlayerId, msg.DisplayName, msg.PlayerSession, board, markedCells, 0, new HashSet<int>(), gravatarHash, isSpectator);
 
             if (_hostPlayerId is null)
                 _hostPlayerId = msg.PlayerId;
@@ -76,8 +77,9 @@ public sealed class LobbyActor : ReceiveActor
             msg.PlayerId,
             GetPlayerInfoList(),
             _gameStarted,
-            playerState.Board,
-            playerState.MarkedCells));
+            playerState.IsSpectator,
+            playerState.IsSpectator ? null : playerState.Board,
+            playerState.IsSpectator ? null : playerState.MarkedCells));
 
         // Broadcast player joined to all other players
         BroadcastExcept(new PlayerJoined(msg.PlayerId, msg.DisplayName, playerState.GravatarHash), msg.PlayerId);
@@ -127,6 +129,7 @@ public sealed class LobbyActor : ReceiveActor
                 playerId,
                 GetPlayerInfoList(),
                 _gameStarted,
+                player.IsSpectator,
                 player.Board,
                 player.MarkedCells));
         }
@@ -138,6 +141,9 @@ public sealed class LobbyActor : ReceiveActor
             return;
 
         if (!_players.TryGetValue(msg.PlayerId, out var player))
+            return;
+
+        if (player.IsSpectator)
             return;
 
         if (msg.CellIndex is < 0 or >= 25 || msg.CellIndex == FreeIndex)
@@ -179,7 +185,7 @@ public sealed class LobbyActor : ReceiveActor
             return;
         }
 
-        // Regenerate boards and reset state for all players
+        // Regenerate boards and reset state for all players (spectators become regular players)
         foreach (var playerId in _players.Keys.ToList())
         {
             var existing = _players[playerId];
@@ -189,7 +195,8 @@ public sealed class LobbyActor : ReceiveActor
                 Board = newBoard,
                 MarkedCells = new HashSet<int> { FreeIndex },
                 BingoCount = 0,
-                CompletedLines = new HashSet<int>()
+                CompletedLines = new HashSet<int>(),
+                IsSpectator = false
             };
         }
 
@@ -205,6 +212,7 @@ public sealed class LobbyActor : ReceiveActor
                 playerId,
                 GetPlayerInfoList(),
                 _gameStarted,
+                false,
                 player.Board,
                 player.MarkedCells));
         }
@@ -262,7 +270,8 @@ public sealed class LobbyActor : ReceiveActor
             p.PlayerId == _hostPlayerId,
             p.MarkedCells.Count - 1, // exclude free space
             p.BingoCount,
-            p.GravatarHash
+            p.GravatarHash,
+            p.IsSpectator
         )).ToList();
     }
 
@@ -289,5 +298,6 @@ public sealed class LobbyActor : ReceiveActor
         HashSet<int> MarkedCells,
         int BingoCount,
         HashSet<int> CompletedLines,
-        string? GravatarHash);
+        string? GravatarHash,
+        bool IsSpectator);
 }
