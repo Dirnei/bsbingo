@@ -24,9 +24,12 @@ services:
     environment:
       MongoDB__ConnectionString: mongodb://root:example@mongodb:27017/?authSource=admin
       MongoDB__Database: bsbingo
+    volumes:
+      - app-keys:/data/keys
     depends_on:
       mongodb:
         condition: service_healthy
 
 volumes:
   mongo-data:
+  app-keys:

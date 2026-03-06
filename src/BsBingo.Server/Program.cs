@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
@@ -18,6 +19,9 @@ using BsBingo.Server.Models;
 using BsBingo.Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo("/data/keys"));
 
 // Load optional local settings (gitignored) for secrets like OAuth credentials
 builder.Configuration.AddJsonFile("appsettings.secure.json", optional: true, reloadOnChange: true);

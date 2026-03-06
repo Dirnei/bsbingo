@@ -27,9 +27,12 @@ services:
       # OAuth__GitHub__ClientSecret: ""
       # OAuth__Google__ClientId: ""
       # OAuth__Google__ClientSecret: ""
+    volumes:
+      - app-keys:/data/keys
     depends_on:
       mongodb:
         condition: service_healthy
 
 volumes:
   mongo-data:
+  app-keys:
