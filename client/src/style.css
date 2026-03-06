@@ -1394,6 +1394,42 @@ img.lobby-player-avatar {
   color: var(--accent);
 }
 
+.lobby-settings-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.lobby-settings-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.lobby-settings-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.lobby-settings-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .lobby-host-controls {
   margin-bottom: 20px;
 }
@@ -1558,6 +1594,11 @@ img.lobby-player-avatar {
 
 .mp-board-area .board {
   max-width: 100%;
+}
+
+.board.disabled {
+  pointer-events: none;
+  opacity: 0.6;
 }
 
 .mp-host-controls {

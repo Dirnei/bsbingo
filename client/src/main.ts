@@ -1,5 +1,5 @@
 import './style.css';
-import { createBoardFromCells, toggleCell, resetMarks, multiplayerToggleCell, createBoardFromLobbyState } from './bingo.ts';
+import { createBoardFromCells, toggleCell, resetMarks, multiplayerToggleCell, multiplayerMarkCell, createBoardFromLobbyState } from './bingo.ts';
 import type { BingoState } from './bingo.ts';
 import {
   mountApp, renderBoard, updateCell, showLoading, showError, clearStatus,
@@ -11,8 +11,9 @@ import {
   updateMultiplayerPlayers, showMultiplayerBingoNotification,
   bindChatListeners, appendChatMessage, showSpectatorView,
   renderMarkHistory, appendMarkHistory, showCellSelectedToast,
+  updateLobbySettings,
 } from './renderer.ts';
-import type { GroupDisplayInfo, MultiplayerPlayerInfo, ChatMessageInfo, MarkHistoryEntry } from './renderer.ts';
+import type { GroupDisplayInfo, MultiplayerPlayerInfo, ChatMessageInfo, MarkHistoryEntry, LobbySettings } from './renderer.ts';
 import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn, starGroup, unstarGroup, createLobby } from './api.ts';
 import type { UserInfo } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
@@ -31,6 +32,7 @@ let lobbyMarkedCells: number[] | null = null;
 let lobbyGameStarted = false;
 let lobbyIsSpectator = false;
 let lobbyMarkHistory: MarkHistoryEntry[] = [];
+let lobbySettings: LobbySettings = { allowMultipleBingos: true, autoSelect: false };
 let lobbyCode: string | null = null;
 let multiplayerState: BingoState | null = null;
 let serverHealthInterval: ReturnType<typeof setInterval> | null = null;
@@ -219,6 +221,7 @@ function closeLobbyWebSocket(): void {
   lobbyGameStarted = false;
   lobbyIsSpectator = false;
   lobbyMarkHistory = [];
+  lobbySettings = { allowMultipleBingos: true, autoSelect: false };
   lobbyCode = null;
   multiplayerState = null;
 }
@@ -233,6 +236,11 @@ function bindChat(): void {
   bindChatListeners(document.body, (text) => sendLobbyMessage('chat:message', { text }));
 }
 
+function sendSettingsUpdate(settings: LobbySettings): void {
+  lobbySettings = settings;
+  sendLobbyMessage('settings:update', { allowMultipleBingos: settings.allowMultipleBingos, autoSelect: settings.autoSelect });
+}
+
 function refreshLobbyUI(): void {
   if (lobbyGameStarted && multiplayerState) {
     updateMultiplayerPlayers(lobbyPlayers, lobbyCurrentPlayerId ?? '');
@@ -240,6 +248,7 @@ function refreshLobbyUI(): void {
   }
   const isHost = lobbyPlayers.some(p => p.playerId === lobbyCurrentPlayerId && p.isHost);
   updateLobbyPlayerList(lobbyPlayers, isHost, () => sendLobbyMessage('game:start'));
+  updateLobbySettings(lobbySettings, isHost, sendSettingsUpdate);
 }
 
 function startMultiplayerGame(): void {
@@ -276,12 +285,14 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
         board?: { index: number; text: string; isFreeSpace: boolean }[];
         markedCells?: number[];
         markHistory?: MarkHistoryEntry[];
+        settings?: LobbySettings;
       } | undefined;
       if (!payload) break;
       lobbyCurrentPlayerId = payload.currentPlayerId;
       lobbyPlayers = payload.players;
       lobbyIsSpectator = payload.isSpectator;
       lobbyMarkHistory = payload.markHistory ?? [];
+      if (payload.settings) lobbySettings = payload.settings;
       if (payload.board) lobbyBoard = payload.board;
       if (payload.markedCells) lobbyMarkedCells = payload.markedCells;
 
@@ -364,6 +375,22 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       }
       break;
     }
+    case 'settings:changed': {
+      const payload = msg.payload as { settings?: LobbySettings } | undefined;
+      if (payload?.settings) {
+        lobbySettings = payload.settings;
+        const isHost = lobbyPlayers.some(p => p.playerId === lobbyCurrentPlayerId && p.isHost);
+        updateLobbySettings(lobbySettings, isHost, sendSettingsUpdate);
+      }
+      break;
+    }
+    case 'cell:automarked': {
+      const payload = msg.payload as { cellIndex: number } | undefined;
+      if (!payload || !multiplayerState) break;
+      multiplayerState = multiplayerMarkCell(multiplayerState, payload.cellIndex);
+      updateMultiplayerCell(multiplayerState, payload.cellIndex);
+      break;
+    }
     case 'player:bingo': {
       const payload = msg.payload as { playerId: string; displayName: string; winningLine: number[] } | undefined;
       if (!payload) break;
@@ -371,6 +398,9 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       if (bingoPlayer) bingoPlayer.bingoCount++;
       if (lobbyGameStarted || lobbyIsSpectator) {
         updateMultiplayerPlayers(lobbyPlayers, lobbyCurrentPlayerId ?? '');
+      }
+      if (!lobbySettings.allowMultipleBingos) {
+        document.querySelector<HTMLDivElement>('#mp-board')?.classList.add('disabled');
       }
       showMultiplayerBingoNotification(payload.displayName);
       break;

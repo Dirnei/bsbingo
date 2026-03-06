@@ -63,6 +63,19 @@ export function multiplayerToggleCell(state: BingoState, index: number): BingoSt
   return { ...state, marked, bingoCount, bingoIndexes, locked: false };
 }
 
+/** Mark a cell (never unmark) in multiplayer mode — used for auto-select. */
+export function multiplayerMarkCell(state: BingoState, index: number): BingoState {
+  if (index === FREE_INDEX) return state;
+  if (state.marked.has(index)) return state;
+
+  const marked = new Set(state.marked);
+  marked.add(index);
+
+  const { bingoCount, bingoIndexes } = detectBingo(marked);
+
+  return { ...state, marked, bingoCount, bingoIndexes, locked: false };
+}
+
 /** Create BingoState from server lobby state (board cells + already marked cells). */
 export function createBoardFromLobbyState(
   cells: { index: number; text: string; isFreeSpace: boolean }[],

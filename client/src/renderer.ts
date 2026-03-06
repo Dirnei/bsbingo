@@ -21,6 +21,11 @@ export interface ChatMessageInfo {
   timestamp: number;
 }
 
+export interface LobbySettings {
+  allowMultipleBingos: boolean;
+  autoSelect: boolean;
+}
+
 export interface MarkHistoryEntry {
   playerId: string;
   displayName: string;
@@ -887,6 +892,7 @@ export function showLobbyWaitingRoom(
           <div class="lobby-player-empty">Verbinde...</div>
         </div>
       </div>
+      <div class="lobby-settings" id="lobby-settings"></div>
       <div class="lobby-host-controls" id="lobby-host-controls"></div>
       ${chatHtml()}
       <div class="lobby-waiting-hint">
@@ -942,6 +948,41 @@ export function updateLobbyPlayerList(players: LobbyPlayerDisplayInfo[], isCurre
   } else {
     controlsEl.innerHTML = `<div class="lobby-waiting-for-host">Warte auf den Host...</div>`;
   }
+}
+
+export function updateLobbySettings(
+  settings: LobbySettings,
+  isHost: boolean,
+  onSettingsChange: (settings: LobbySettings) => void,
+): void {
+  const el = groupSelectorEl.querySelector<HTMLDivElement>('#lobby-settings');
+  if (!el) return;
+
+  if (!isHost) {
+    el.innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="lobby-settings-card">
+      <div class="lobby-settings-title">Einstellungen</div>
+      <label class="lobby-settings-option">
+        <input type="checkbox" id="setting-multiple-bingos" ${settings.allowMultipleBingos ? 'checked' : ''} />
+        <span>Mehrere Bingos erlauben</span>
+      </label>
+      <label class="lobby-settings-option">
+        <input type="checkbox" id="setting-auto-select" ${settings.autoSelect ? 'checked' : ''} />
+        <span>Wörter automatisch markieren</span>
+      </label>
+    </div>
+  `;
+
+  el.querySelector<HTMLInputElement>('#setting-multiple-bingos')!.addEventListener('change', (e) => {
+    onSettingsChange({ ...settings, allowMultipleBingos: (e.target as HTMLInputElement).checked });
+  });
+  el.querySelector<HTMLInputElement>('#setting-auto-select')!.addEventListener('change', (e) => {
+    onSettingsChange({ ...settings, autoSelect: (e.target as HTMLInputElement).checked });
+  });
 }
 
 export function showSpectatorView(
