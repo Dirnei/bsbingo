@@ -464,7 +464,6 @@ button.primary:hover {
   background: var(--panel);
   border: 1px solid var(--border);
   padding: 20px;
-  cursor: pointer;
   transition: all 0.18s;
 }
 

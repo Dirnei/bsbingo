@@ -244,9 +244,9 @@ Add user accounts via OAuth 2.0 (GitHub and Google) so word groups can be owned 
 **Description:** As a user, I want the pointer (hand) cursor to only appear when hovering over clickable buttons, not the entire group card.
 
 **Acceptance Criteria:**
-- [ ] `cursor: pointer` removed from the group card container
-- [ ] `cursor: pointer` remains on buttons (Play, Edit, Delete, Share, Star)
-- [ ] Typecheck passes
+- [x] `cursor: pointer` removed from the group card container
+- [x] `cursor: pointer` remains on buttons (Play, Edit, Delete, Share, Star)
+- [x] Typecheck passes
 
 ## Open Questions
 
