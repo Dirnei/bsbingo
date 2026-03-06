@@ -19,13 +19,13 @@ Add real-time multiplayer support so players in the same lobby see each other's 
 **Description:** As a developer, I need a LobbyManagerActor that creates and finds lobbies so the multiplayer system can manage active games.
 
 **Acceptance Criteria:**
-- [ ] LobbyManagerActor handles `CreateLobby` message — creates a new LobbyActor, returns lobby code
-- [ ] LobbyManagerActor handles `FindLobby` message — looks up a lobby by code
-- [ ] Generates short, unique, URL-safe lobby codes (e.g., 6 alphanumeric characters like `ABCD12`)
-- [ ] Tracks active lobbies in memory
-- [ ] Removes lobby references when a LobbyActor terminates
-- [ ] Registered via Servus.Akka
-- [ ] Typecheck passes
+- [x] LobbyManagerActor handles `CreateLobby` message — creates a new LobbyActor, returns lobby code
+- [x] LobbyManagerActor handles `FindLobby` message — looks up a lobby by code
+- [x] Generates short, unique, URL-safe lobby codes (e.g., 6 alphanumeric characters like `ABCD12`)
+- [x] Tracks active lobbies in memory
+- [x] Removes lobby references when a LobbyActor terminates
+- [x] Registered via Servus.Akka
+- [x] Typecheck passes
 
 ### US-002: Implement LobbyActor
 **Description:** As a developer, I need a LobbyActor (one per lobby) that manages lobby state, player boards, and game lifecycle.

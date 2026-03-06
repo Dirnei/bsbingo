@@ -107,6 +107,7 @@ builder.Services.AddAkka("bsbingo", configurationBuilder =>
         helper.Register<GroupActor>();
         helper.Register<GameActor>();
         helper.Register<UserActor>();
+        helper.Register<LobbyManagerActor>();
     });
 });
 
