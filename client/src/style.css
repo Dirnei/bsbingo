@@ -613,6 +613,17 @@ button.primary:hover {
   color: var(--muted);
   white-space: nowrap;
   padding-top: 4px;
+  background: none;
+  border: none;
+}
+
+button.group-card-star-count {
+  cursor: pointer;
+}
+
+button.group-card-star-count:hover,
+button.group-card-star-count.starred {
+  color: #ffc107;
 }
 
 /* Delete Confirmation Dialog */

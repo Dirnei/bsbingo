@@ -263,7 +263,9 @@ export function showGroupList(
       <div class="group-card" data-group-id="${escapeHtml(g.id)}">
         <div class="group-card-header">
           <div class="group-card-name">${escapeHtml(g.name)}${g.visibility === 'private' ? ' <span class="visibility-badge visibility-private">Privat</span>' : ''}</div>
-          <div class="group-card-star-count">${starIcon} ${g.starCount}</div>
+          ${currentUserId
+            ? `<button class="group-card-star-count ${starClass}" data-action="star">${starIcon} ${g.starCount}</button>`
+            : `<div class="group-card-star-count">${starIcon} ${g.starCount}</div>`}
         </div>
         <div class="group-card-desc">${escapeHtml(g.description || 'Keine Beschreibung')}</div>
         <div class="group-card-meta">
@@ -272,7 +274,6 @@ export function showGroupList(
         </div>
         <div class="group-card-actions">
           <button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>
-          ${currentUserId ? `<button class="group-action-btn ${starClass}" data-action="star">${starIcon}</button>` : ''}
           ${isOwner && g.visibility === 'private' ? `<button class="group-action-btn group-action-share" data-action="share">🔗 Teilen</button>` : ''}
           ${isOwner ? `<button class="group-action-btn group-action-edit" data-action="edit">✎ Bearbeiten</button>` : ''}
           ${isOwner ? `<button class="group-action-btn group-action-delete" data-action="delete">✕ Löschen</button>` : ''}
