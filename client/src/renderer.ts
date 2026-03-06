@@ -10,6 +10,15 @@ export interface MultiplayerPlayerInfo {
   isHost: boolean;
   markedCount: number;
   bingoCount: number;
+  gravatarHash?: string | null;
+}
+
+export interface ChatMessageInfo {
+  playerId: string;
+  displayName: string;
+  gravatarHash?: string | null;
+  text: string;
+  timestamp: number;
 }
 
 export interface RenderCallbacks {
@@ -668,6 +677,11 @@ function escapeHtml(text: string): string {
   return div.innerHTML;
 }
 
+function gravatarFromHash(hash: string | null | undefined, size = 80): string {
+  if (!hash) return '';
+  return `https://gravatar.com/avatar/${hash}?d=identicon&s=${size}`;
+}
+
 async function gravatarUrl(email: string): Promise<string> {
   if (!email) return '';
   const data = new TextEncoder().encode(email.trim().toLowerCase());
@@ -795,6 +809,7 @@ export interface LobbyPlayerDisplayInfo {
   playerId: string;
   displayName: string;
   isHost: boolean;
+  gravatarHash?: string | null;
 }
 
 export function showNamePrompt(onSubmit: (name: string) => void, onCancel: () => void): void {
@@ -868,6 +883,7 @@ export function showLobbyWaitingRoom(
         </div>
       </div>
       <div class="lobby-host-controls" id="lobby-host-controls"></div>
+      ${chatHtml()}
       <div class="lobby-waiting-hint">
         Teile den Code mit anderen Spielern, damit sie beitreten können.
       </div>
@@ -898,13 +914,18 @@ export function updateLobbyPlayerList(players: LobbyPlayerDisplayInfo[], isCurre
   if (players.length === 0) {
     listEl.innerHTML = `<div class="lobby-player-empty">Keine Spieler</div>`;
   } else {
-    listEl.innerHTML = players.map(p => `
-      <div class="lobby-player-item">
-        <div class="lobby-player-avatar">${escapeHtml(p.displayName.charAt(0).toUpperCase())}</div>
-        <div class="lobby-player-name">${escapeHtml(p.displayName)}</div>
-        ${p.isHost ? '<div class="lobby-player-host-badge">Host</div>' : ''}
-      </div>
-    `).join('');
+    listEl.innerHTML = players.map(p => {
+      const avatarSrc = gravatarFromHash(p.gravatarHash, 64);
+      return `
+        <div class="lobby-player-item">
+          ${avatarSrc
+            ? `<img class="lobby-player-avatar" src="${escapeHtml(avatarSrc)}" alt="" />`
+            : `<div class="lobby-player-avatar">${escapeHtml(p.displayName.charAt(0).toUpperCase())}</div>`}
+          <div class="lobby-player-name">${escapeHtml(p.displayName)}</div>
+          ${p.isHost ? '<div class="lobby-player-host-badge">Host</div>' : ''}
+        </div>
+      `;
+    }).join('');
   }
 
   const controlsEl = groupSelectorEl.querySelector<HTMLDivElement>('#lobby-host-controls');
@@ -916,6 +937,34 @@ export function updateLobbyPlayerList(players: LobbyPlayerDisplayInfo[], isCurre
   } else {
     controlsEl.innerHTML = `<div class="lobby-waiting-for-host">Warte auf den Host...</div>`;
   }
+}
+
+export function showSpectatorView(
+  players: MultiplayerPlayerInfo[],
+  currentPlayerId: string,
+  lobbyCode: string,
+  onBack: () => void,
+): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+
+  groupSelectorEl.innerHTML = `
+    <div class="mp-game">
+      <div class="mp-game-header">
+        <button class="back-link" id="mp-btn-back">\u2190 Lobby verlassen</button>
+        <div class="mp-lobby-code">Lobby: <span class="mp-lobby-code-value">${escapeHtml(lobbyCode)}</span></div>
+      </div>
+      <div class="spectator-notice">Du schaust dem Spiel zu. Bei der nächsten Runde bist du dabei!</div>
+      <div class="mp-sidebar" style="max-width: 480px; margin: 0 auto;">
+        <div class="mp-sidebar-title">Spieler</div>
+        <div class="mp-player-list" id="mp-player-list"></div>
+        ${chatHtml()}
+      </div>
+    </div>
+  `;
+
+  groupSelectorEl.querySelector<HTMLButtonElement>('#mp-btn-back')!.addEventListener('click', onBack);
+  updateMultiplayerPlayers(players, currentPlayerId);
 }
 
 export interface MultiplayerGameCallbacks {
@@ -953,6 +1002,7 @@ export function showMultiplayerGameView(
         <div class="mp-sidebar">
           <div class="mp-sidebar-title">Spieler</div>
           <div class="mp-player-list" id="mp-player-list"></div>
+          ${chatHtml()}
         </div>
       </div>
     </div>
@@ -1048,10 +1098,13 @@ export function updateMultiplayerPlayers(players: MultiplayerPlayerInfo[], curre
   listEl.innerHTML = sorted.map(p => {
     const isSelf = p.playerId === currentPlayerId;
     const bingoLabel = p.bingoCount > 0 ? `<span class="mp-player-bingo-count">${p.bingoCount} Bingo${p.bingoCount > 1 ? 's' : ''}</span>` : '';
+    const avatarSrc = gravatarFromHash(p.gravatarHash, 56);
     return `
       <div class="mp-player-card ${isSelf ? 'mp-player-self' : ''}">
         <div class="mp-player-info">
-          <div class="mp-player-avatar">${escapeHtml(p.displayName.charAt(0).toUpperCase())}</div>
+          ${avatarSrc
+            ? `<img class="mp-player-avatar" src="${escapeHtml(avatarSrc)}" alt="" />`
+            : `<div class="mp-player-avatar">${escapeHtml(p.displayName.charAt(0).toUpperCase())}</div>`}
           <div class="mp-player-details">
             <div class="mp-player-name">${escapeHtml(p.displayName)}${p.isHost ? ' <span class="lobby-player-host-badge">Host</span>' : ''}</div>
             <div class="mp-player-progress-text">${p.markedCount} / 24 ${bingoLabel}</div>
@@ -1086,6 +1139,58 @@ export function showMultiplayerBingoNotification(winnerName: string): void {
     overlay.classList.add('mp-bingo-fade');
     overlay.addEventListener('transitionend', () => overlay.remove());
   });
+}
+
+function chatHtml(): string {
+  return `
+    <div class="chat-panel" id="chat-panel">
+      <div class="chat-title">Chat</div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-row">
+        <input class="chat-input" type="text" id="chat-input" placeholder="Nachricht..." maxlength="500" autocomplete="off" />
+        <button class="chat-send-btn" id="chat-send-btn">➤</button>
+      </div>
+    </div>
+  `;
+}
+
+export function bindChatListeners(container: HTMLElement, onSend: (text: string) => void): void {
+  const input = container.querySelector<HTMLInputElement>('#chat-input');
+  const sendBtn = container.querySelector<HTMLButtonElement>('#chat-send-btn');
+
+  function send(): void {
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+    onSend(text);
+    input.value = '';
+  }
+
+  sendBtn?.addEventListener('click', send);
+  input?.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
+}
+
+export function appendChatMessage(msg: ChatMessageInfo, currentPlayerId: string): void {
+  const container = document.querySelector<HTMLDivElement>('#chat-messages');
+  if (!container) return;
+
+  const isSelf = msg.playerId === currentPlayerId;
+  const avatarSrc = gravatarFromHash(msg.gravatarHash, 40);
+  const avatarHtml = avatarSrc
+    ? `<img class="chat-avatar" src="${escapeHtml(avatarSrc)}" alt="" />`
+    : `<div class="chat-avatar chat-avatar-letter">${escapeHtml(msg.displayName.charAt(0).toUpperCase())}</div>`;
+
+  const el = document.createElement('div');
+  el.className = `chat-msg ${isSelf ? 'chat-msg-self' : ''}`;
+  el.innerHTML = `
+    ${avatarHtml}
+    <div class="chat-msg-body">
+      <div class="chat-msg-name">${escapeHtml(msg.displayName)}</div>
+      <div class="chat-msg-text">${escapeHtml(msg.text)}</div>
+    </div>
+  `;
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
 }
 
 export function showStaticPage(title: string, html: string, onBack: () => void): void {

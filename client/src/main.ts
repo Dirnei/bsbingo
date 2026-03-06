@@ -9,8 +9,9 @@ import {
   showLobbyWaitingRoom, updateLobbyPlayerList, showNamePrompt,
   showMultiplayerGameView, renderMultiplayerBoard, updateMultiplayerCell,
   updateMultiplayerPlayers, showMultiplayerBingoNotification,
+  bindChatListeners, appendChatMessage, showSpectatorView,
 } from './renderer.ts';
-import type { GroupDisplayInfo, MultiplayerPlayerInfo } from './renderer.ts';
+import type { GroupDisplayInfo, MultiplayerPlayerInfo, ChatMessageInfo } from './renderer.ts';
 import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn, starGroup, unstarGroup, createLobby } from './api.ts';
 import type { UserInfo } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
@@ -27,8 +28,10 @@ let lobbyCurrentPlayerId: string | null = null;
 let lobbyBoard: { index: number; text: string; isFreeSpace: boolean }[] | null = null;
 let lobbyMarkedCells: number[] | null = null;
 let lobbyGameStarted = false;
+let lobbyIsSpectator = false;
 let lobbyCode: string | null = null;
 let multiplayerState: BingoState | null = null;
+let serverHealthInterval: ReturnType<typeof setInterval> | null = null;
 
 function refreshHeaderAuth(): void {
   updateHeaderAuth(currentUser, {
@@ -51,9 +54,11 @@ async function loadGroups(): Promise<void> {
   showGroupSelectorLoading();
   try {
     cachedGroups = await fetchGroups();
+    stopServerHealthCheck();
     showGroupListWithActions();
   } catch (err) {
     showGroupSelectorError(`Fehler beim Laden: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
+    startServerHealthCheck();
   }
 }
 
@@ -181,6 +186,29 @@ function onReset(): void {
   renderBoard(state);
 }
 
+function startServerHealthCheck(): void {
+  if (serverHealthInterval) return;
+  serverHealthInterval = setInterval(async () => {
+    try {
+      const res = await fetch('/healthz', { method: 'GET', cache: 'no-store' });
+      if (res.ok) {
+        stopServerHealthCheck();
+        window.location.hash = '#/groups';
+        window.location.reload();
+      }
+    } catch {
+      // Server still down
+    }
+  }, 3000);
+}
+
+function stopServerHealthCheck(): void {
+  if (serverHealthInterval) {
+    clearInterval(serverHealthInterval);
+    serverHealthInterval = null;
+  }
+}
+
 function closeLobbyWebSocket(): void {
   if (lobbyWebSocket) {
     lobbyWebSocket.close();
@@ -191,6 +219,7 @@ function closeLobbyWebSocket(): void {
   lobbyBoard = null;
   lobbyMarkedCells = null;
   lobbyGameStarted = false;
+  lobbyIsSpectator = false;
   lobbyCode = null;
   multiplayerState = null;
 }
@@ -199,6 +228,10 @@ function sendLobbyMessage(type: string, payload?: Record<string, unknown>): void
   if (lobbyWebSocket?.readyState === WebSocket.OPEN) {
     lobbyWebSocket.send(JSON.stringify({ type, payload }));
   }
+}
+
+function bindChat(): void {
+  bindChatListeners(document.body, (text) => sendLobbyMessage('chat:message', { text }));
 }
 
 function refreshLobbyUI(): void {
@@ -229,6 +262,7 @@ function startMultiplayerGame(): void {
     },
     onRestart: () => sendLobbyMessage('game:restart'),
   });
+  bindChat();
 }
 
 function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknown> }): void {
@@ -238,16 +272,27 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
         currentPlayerId: string;
         players: MultiplayerPlayerInfo[];
         gameStarted: boolean;
+        isSpectator: boolean;
         board?: { index: number; text: string; isFreeSpace: boolean }[];
         markedCells?: number[];
       } | undefined;
       if (!payload) break;
       lobbyCurrentPlayerId = payload.currentPlayerId;
       lobbyPlayers = payload.players;
+      lobbyIsSpectator = payload.isSpectator;
       if (payload.board) lobbyBoard = payload.board;
       if (payload.markedCells) lobbyMarkedCells = payload.markedCells;
 
-      if (payload.gameStarted && !lobbyGameStarted) {
+      if (payload.gameStarted && lobbyIsSpectator) {
+        // Joined after game started — spectator mode
+        if (lobbyCode) {
+          showSpectatorView(lobbyPlayers, lobbyCurrentPlayerId, lobbyCode, () => {
+            closeLobbyWebSocket();
+            navigate('/groups');
+          });
+          bindChat();
+        }
+      } else if (payload.gameStarted && !lobbyGameStarted) {
         startMultiplayerGame();
       } else if (!payload.gameStarted && lobbyGameStarted) {
         // Game was restarted — back to waiting room, new board will come
@@ -258,6 +303,7 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
             onBack: () => { closeLobbyWebSocket(); navigate('/groups'); },
             onStartGame: () => sendLobbyMessage('game:start'),
           });
+          bindChat();
         }
         refreshLobbyUI();
       } else if (lobbyGameStarted && lobbyBoard) {
@@ -271,10 +317,10 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       break;
     }
     case 'player:joined': {
-      const payload = msg.payload as { playerId: string; displayName: string } | undefined;
+      const payload = msg.payload as { playerId: string; displayName: string; gravatarHash?: string | null } | undefined;
       if (!payload) break;
       if (!lobbyPlayers.some(p => p.playerId === payload.playerId)) {
-        lobbyPlayers.push({ playerId: payload.playerId, displayName: payload.displayName, isHost: false, markedCount: 0, bingoCount: 0 });
+        lobbyPlayers.push({ playerId: payload.playerId, displayName: payload.displayName, isHost: false, markedCount: 0, bingoCount: 0, gravatarHash: payload.gravatarHash });
       }
       refreshLobbyUI();
       break;
@@ -297,7 +343,7 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       if (!payload) break;
       const player = lobbyPlayers.find(p => p.playerId === payload.playerId);
       if (player) player.markedCount = payload.markedCount;
-      if (lobbyGameStarted) {
+      if (lobbyGameStarted || lobbyIsSpectator) {
         updateMultiplayerPlayers(lobbyPlayers, lobbyCurrentPlayerId ?? '');
       }
       break;
@@ -307,7 +353,7 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       if (!payload) break;
       const bingoPlayer = lobbyPlayers.find(p => p.playerId === payload.playerId);
       if (bingoPlayer) bingoPlayer.bingoCount++;
-      if (lobbyGameStarted) {
+      if (lobbyGameStarted || lobbyIsSpectator) {
         updateMultiplayerPlayers(lobbyPlayers, lobbyCurrentPlayerId ?? '');
       }
       showMultiplayerBingoNotification(payload.displayName);
@@ -318,6 +364,12 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       // Don't reset lobbyGameStarted here — let the lobby:state handler
       // detect the transition (gameStarted=false && lobbyGameStarted=true).
       multiplayerState = null;
+      break;
+    }
+    case 'chat:message': {
+      const payload = msg.payload as ChatMessageInfo | undefined;
+      if (!payload) break;
+      appendChatMessage(payload, lobbyCurrentPlayerId ?? '');
       break;
     }
     case 'lobby:expired': {
@@ -341,6 +393,7 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
 }
 
 function connectToLobby(code: string, displayName: string): void {
+  stopServerHealthCheck();
   closeLobbyWebSocket();
   lobbyCode = code;
 
@@ -351,7 +404,9 @@ function connectToLobby(code: string, displayName: string): void {
   lobbyWebSocket = ws;
 
   ws.addEventListener('open', () => {
-    ws.send(JSON.stringify({ type: 'lobby:join', payload: { displayName } }));
+    const payload: { displayName: string; email?: string } = { displayName };
+    if (currentUser?.email) payload.email = currentUser.email;
+    ws.send(JSON.stringify({ type: 'lobby:join', payload }));
   });
 
   ws.addEventListener('message', (event) => {
@@ -364,13 +419,15 @@ function connectToLobby(code: string, displayName: string): void {
   });
 
   ws.addEventListener('close', () => {
-    lobbyWebSocket = null;
+    if (lobbyWebSocket === ws) lobbyWebSocket = null;
+    showToast('Verbindung zum Server verloren.');
+    closeLobbyWebSocket();
+    navigate('/groups');
+    startServerHealthCheck();
   });
 
   ws.addEventListener('error', () => {
-    showToast('Verbindung zur Lobby fehlgeschlagen. Code ungültig oder Lobby abgelaufen.');
-    lobbyWebSocket = null;
-    navigate('/groups');
+    // The close event will fire after error, which handles navigation
   });
 }
 
@@ -449,6 +506,7 @@ registerRoutes([
           },
           onStartGame: () => sendLobbyMessage('game:start'),
         });
+        bindChat();
         connectToLobby(code, name);
       }
 

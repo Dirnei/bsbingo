@@ -40,6 +40,7 @@ public sealed class PlayerSessionActor : ReceiveActor
         Receive<ProgressUpdate>(msg => SendToWebSocket("player:progress", msg));
         Receive<PlayerBingo>(msg => SendToWebSocket("player:bingo", msg));
         Receive<GameRestarted>(_ => SendToWebSocket("game:restart", new { }));
+        Receive<ChatMessage>(msg => SendToWebSocket("chat:message", msg));
         Receive<LobbyExpired>(_ => SendToWebSocket("lobby:expired", new { }));
         Receive<LobbyClosed>(_ => SendToWebSocket("lobby:closed", new { }));
         Receive<LobbyError>(msg => SendToWebSocket("error", msg));
@@ -56,7 +57,8 @@ public sealed class PlayerSessionActor : ReceiveActor
                 if (msg.Payload is not null)
                 {
                     var displayName = msg.Payload.Value.GetProperty("displayName").GetString() ?? "Anonymous";
-                    _lobbyActor.Tell(new JoinLobby(_playerId, displayName, Self));
+                    string? email = msg.Payload.Value.TryGetProperty("email", out var emailProp) ? emailProp.GetString() : null;
+                    _lobbyActor.Tell(new JoinLobby(_playerId, displayName, email, Self));
                 }
                 break;
 
@@ -74,6 +76,14 @@ public sealed class PlayerSessionActor : ReceiveActor
 
             case "game:restart":
                 _lobbyActor.Tell(new RestartGame(_playerId));
+                break;
+
+            case "chat:message":
+                if (msg.Payload is not null)
+                {
+                    var text = msg.Payload.Value.GetProperty("text").GetString() ?? "";
+                    _lobbyActor.Tell(new SendChat(_playerId, text));
+                }
                 break;
         }
     }
