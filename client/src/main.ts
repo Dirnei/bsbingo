@@ -31,6 +31,7 @@ let lobbyGameStarted = false;
 let lobbyIsSpectator = false;
 let lobbyCode: string | null = null;
 let multiplayerState: BingoState | null = null;
+let serverHealthInterval: ReturnType<typeof setInterval> | null = null;
 
 function refreshHeaderAuth(): void {
   updateHeaderAuth(currentUser, {
@@ -53,9 +54,11 @@ async function loadGroups(): Promise<void> {
   showGroupSelectorLoading();
   try {
     cachedGroups = await fetchGroups();
+    stopServerHealthCheck();
     showGroupListWithActions();
   } catch (err) {
     showGroupSelectorError(`Fehler beim Laden: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
+    startServerHealthCheck();
   }
 }
 
@@ -181,6 +184,29 @@ function onCellClick(index: number): void {
 function onReset(): void {
   state = resetMarks(state);
   renderBoard(state);
+}
+
+function startServerHealthCheck(): void {
+  if (serverHealthInterval) return;
+  serverHealthInterval = setInterval(async () => {
+    try {
+      const res = await fetch('/healthz', { method: 'GET', cache: 'no-store' });
+      if (res.ok) {
+        stopServerHealthCheck();
+        window.location.hash = '#/groups';
+        window.location.reload();
+      }
+    } catch {
+      // Server still down
+    }
+  }, 3000);
+}
+
+function stopServerHealthCheck(): void {
+  if (serverHealthInterval) {
+    clearInterval(serverHealthInterval);
+    serverHealthInterval = null;
+  }
 }
 
 function closeLobbyWebSocket(): void {
@@ -367,6 +393,7 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
 }
 
 function connectToLobby(code: string, displayName: string): void {
+  stopServerHealthCheck();
   closeLobbyWebSocket();
   lobbyCode = code;
 
@@ -396,6 +423,7 @@ function connectToLobby(code: string, displayName: string): void {
     showToast('Verbindung zum Server verloren.');
     closeLobbyWebSocket();
     navigate('/groups');
+    startServerHealthCheck();
   });
 
   ws.addEventListener('error', () => {
