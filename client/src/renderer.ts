@@ -285,7 +285,7 @@ function bindJoinLobbyListeners(container: HTMLElement, onJoinLobby?: (code: str
 
 export function showGroupList(
   groups: GroupDisplayInfo[],
-  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void; onShare?: (id: string) => void; onStar?: (id: string) => void; onMultiplayer?: (id: string) => void; onJoinLobby?: (code: string, displayName: string) => void },
+  callbacks: { onPlay: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string, name: string) => void; onCreate: () => void; onShare?: (id: string) => void; onStar?: (id: string) => void; onJoinLobby?: (code: string, displayName: string) => void },
   currentUserId?: string | null,
   currentUserName?: string | null,
 ): void {
@@ -339,8 +339,7 @@ export function showGroupList(
           <span>${g.createdByName ? escapeHtml(g.createdByName) : 'Kein Besitzer'}</span>
         </div>
         <div class="group-card-actions">
-          <button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>
-          ${g.wordCount >= 24 ? `<button class="group-action-btn group-action-multiplayer" data-action="multiplayer">👥 Multiplayer</button>` : ''}
+          ${g.wordCount >= 24 ? `<button class="group-action-btn group-action-play" data-action="play">▶ Spielen</button>` : ''}
           ${isOwner && g.visibility === 'private' ? `<button class="group-action-btn group-action-share" data-action="share">🔗 Teilen</button>` : ''}
           ${isOwner ? `<button class="group-action-btn group-action-edit" data-action="edit">✎ Bearbeiten</button>` : ''}
           ${isOwner ? `<button class="group-action-btn group-action-delete" data-action="delete">✕ Löschen</button>` : ''}
@@ -402,7 +401,6 @@ export function showGroupList(
 
     const action = btn.dataset.action;
     if (action === 'play') callbacks.onPlay(groupId);
-    else if (action === 'multiplayer' && callbacks.onMultiplayer) callbacks.onMultiplayer(groupId);
     else if (action === 'star' && callbacks.onStar) callbacks.onStar(groupId);
     else if (action === 'share' && callbacks.onShare) callbacks.onShare(groupId);
     else if (action === 'edit') callbacks.onEdit(groupId);

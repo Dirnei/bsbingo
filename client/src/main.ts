@@ -64,8 +64,33 @@ async function loadGroups(): Promise<void> {
 
 function showGroupListWithActions(): void {
   showGroupList(cachedGroups, {
-    onPlay: (id) => {
-      navigate(`/game/${id}`);
+    onPlay: async (id) => {
+      const group = cachedGroups.find(g => g.id === id);
+      lobbyGroupName = group?.name ?? null;
+
+      if (!currentUser) {
+        showNamePrompt(async (name) => {
+          lobbyDisplayName = name;
+          try {
+            showGroupSelectorLoading();
+            const result = await createLobby(id, name);
+            navigate(`/lobby/${result.lobbyCode}`);
+          } catch (err) {
+            showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen der Lobby');
+            showGroupListWithActions();
+          }
+        }, () => showGroupListWithActions());
+        return;
+      }
+
+      try {
+        showGroupSelectorLoading();
+        const result = await createLobby(id, currentUser.name);
+        navigate(`/lobby/${result.lobbyCode}`);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen der Lobby');
+        showGroupListWithActions();
+      }
     },
     onEdit: (id) => {
       navigate(`/groups/${id}/edit`);
@@ -97,35 +122,6 @@ function showGroupListWithActions(): void {
         });
       } catch (err) {
         showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen des Einladungslinks');
-      }
-    },
-    onMultiplayer: async (id) => {
-      const group = cachedGroups.find(g => g.id === id);
-      lobbyGroupName = group?.name ?? null;
-
-      if (!currentUser) {
-        // Anonymous user — need a name before creating lobby
-        showNamePrompt(async (name) => {
-          lobbyDisplayName = name;
-          try {
-            showGroupSelectorLoading();
-            const result = await createLobby(id, name);
-            navigate(`/lobby/${result.lobbyCode}`);
-          } catch (err) {
-            showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen der Lobby');
-            showGroupListWithActions();
-          }
-        }, () => showGroupListWithActions());
-        return;
-      }
-
-      try {
-        showGroupSelectorLoading();
-        const result = await createLobby(id, currentUser.name);
-        navigate(`/lobby/${result.lobbyCode}`);
-      } catch (err) {
-        showToast(err instanceof Error ? err.message : 'Fehler beim Erstellen der Lobby');
-        showGroupListWithActions();
       }
     },
     onJoinLobby: (code, displayName) => {
