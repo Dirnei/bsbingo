@@ -100,7 +100,7 @@ Add real-time multiplayer support so players in the same lobby see each other's 
 **Description:** As a player, I want to play bingo in real-time where my marks are tracked and other players' progress is visible.
 
 **Acceptance Criteria:**
-- [ ] WebSocket message protocol implemented:
+- [x] WebSocket message protocol implemented:
   - `lobby:join` (Client -> Server): join with lobby code + display name
   - `lobby:state` (Server -> Client): full lobby state on join
   - `player:joined` (Server -> All): new player entered
@@ -110,9 +110,9 @@ Add real-time multiplayer support so players in the same lobby see each other's 
   - `player:progress` (Server -> All): updated mark count for a player
   - `player:bingo` (Server -> All): a player got BINGO
   - `game:restart` (Server -> All): host restarted the round
-- [ ] Each player's board rendered independently (same words, different layout)
-- [ ] Mark count per player shown in real-time (e.g., "7/24 marked")
-- [ ] Typecheck passes
+- [x] Each player's board rendered independently (same words, different layout)
+- [x] Mark count per player shown in real-time (e.g., "7/24 marked")
+- [x] Typecheck passes
 
 ### US-009: Server-side bingo validation
 **Description:** As a system, I need to validate bingo claims on the server so players can't cheat.

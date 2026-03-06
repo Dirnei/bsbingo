@@ -4,6 +4,14 @@ import { createWordEditor } from './word-editor.ts';
 import type { WordEditor } from './word-editor.ts';
 import type { UserInfo } from './api.ts';
 
+export interface MultiplayerPlayerInfo {
+  playerId: string;
+  displayName: string;
+  isHost: boolean;
+  markedCount: number;
+  bingoCount: number;
+}
+
 export interface RenderCallbacks {
   onCellClick: (index: number) => void;
   onNewGame: () => void;
@@ -866,6 +874,174 @@ export function updateLobbyPlayerList(players: LobbyPlayerDisplayInfo[], isCurre
   } else {
     controlsEl.innerHTML = `<div class="lobby-waiting-for-host">Warte auf den Host...</div>`;
   }
+}
+
+export interface MultiplayerGameCallbacks {
+  onCellClick: (index: number) => void;
+  onBack: () => void;
+  onRestart: () => void;
+}
+
+export function showMultiplayerGameView(
+  state: BingoState,
+  players: MultiplayerPlayerInfo[],
+  currentPlayerId: string,
+  lobbyCode: string,
+  callbacks: MultiplayerGameCallbacks,
+): void {
+  groupSelectorEl.classList.remove('hidden');
+  gameViewEl.classList.add('hidden');
+
+  const isHost = players.some(p => p.playerId === currentPlayerId && p.isHost);
+
+  groupSelectorEl.innerHTML = `
+    <div class="mp-game">
+      <div class="mp-game-header">
+        <button class="back-link" id="mp-btn-back">\u2190 Lobby verlassen</button>
+        <div class="mp-lobby-code">Lobby: <span class="mp-lobby-code-value">${escapeHtml(lobbyCode)}</span></div>
+      </div>
+      <div class="mp-layout">
+        <div class="mp-board-area">
+          <div class="counter">Markiert: <span id="mp-count">0</span> / 24 &nbsp;|&nbsp; Bingos: <span id="mp-bingos">0</span></div>
+          <div class="bingo-banner" id="mp-bingo-banner">BINGO!</div>
+          <div class="bingo-sub" id="mp-bingo-sub"></div>
+          <div class="board" id="mp-board"></div>
+          ${isHost ? '<div class="mp-host-controls"><button class="primary" id="mp-btn-restart">\u27f3 Neue Runde</button></div>' : ''}
+        </div>
+        <div class="mp-sidebar">
+          <div class="mp-sidebar-title">Spieler</div>
+          <div class="mp-player-list" id="mp-player-list"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const mpBoardEl = groupSelectorEl.querySelector<HTMLDivElement>('#mp-board')!;
+  mpBoardEl.addEventListener('click', (e) => {
+    const cell = (e.target as HTMLElement).closest<HTMLElement>('.cell');
+    if (!cell) return;
+    const index = Number(cell.dataset.index);
+    if (!isFreeSpace(index)) {
+      callbacks.onCellClick(index);
+    }
+  });
+
+  groupSelectorEl.querySelector<HTMLButtonElement>('#mp-btn-back')!.addEventListener('click', callbacks.onBack);
+  groupSelectorEl.querySelector<HTMLButtonElement>('#mp-btn-restart')?.addEventListener('click', callbacks.onRestart);
+
+  renderMultiplayerBoard(state);
+  updateMultiplayerPlayers(players, currentPlayerId);
+}
+
+export function renderMultiplayerBoard(state: BingoState): void {
+  const mpBoardEl = groupSelectorEl.querySelector<HTMLDivElement>('#mp-board');
+  if (!mpBoardEl) return;
+
+  mpBoardEl.innerHTML = '';
+
+  for (let i = 0; i < state.board.length; i++) {
+    const phrase = state.board[i];
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.index = String(i);
+
+    if (isFreeSpace(i)) cell.classList.add('free');
+    if (state.marked.has(i)) cell.classList.add('marked');
+    if (state.bingoIndexes.has(i)) cell.classList.add('bingo-line');
+
+    const text = document.createElement('div');
+    text.className = 'cell-text';
+    text.textContent = phrase;
+
+    const check = document.createElement('span');
+    check.className = 'check';
+    check.textContent = '\u2713';
+
+    cell.appendChild(text);
+    cell.appendChild(check);
+    mpBoardEl.appendChild(cell);
+  }
+
+  updateMultiplayerStatus(state);
+}
+
+export function updateMultiplayerCell(state: BingoState, index: number): void {
+  const mpBoardEl = groupSelectorEl.querySelector<HTMLDivElement>('#mp-board');
+  if (!mpBoardEl) return;
+
+  const cell = mpBoardEl.querySelector<HTMLElement>(`[data-index="${index}"]`);
+  if (!cell) return;
+  cell.classList.toggle('marked', state.marked.has(index));
+  cell.classList.toggle('bingo-line', state.bingoIndexes.has(index));
+
+  for (let i = 0; i < state.board.length; i++) {
+    if (i === index) continue;
+    const otherCell = mpBoardEl.querySelector<HTMLElement>(`[data-index="${i}"]`);
+    if (!otherCell) continue;
+    otherCell.classList.toggle('bingo-line', state.bingoIndexes.has(i));
+  }
+
+  updateMultiplayerStatus(state);
+}
+
+function updateMultiplayerStatus(state: BingoState): void {
+  const countEl = groupSelectorEl.querySelector<HTMLSpanElement>('#mp-count');
+  const bingosEl = groupSelectorEl.querySelector<HTMLSpanElement>('#mp-bingos');
+  if (countEl) countEl.textContent = String(getMarkedCount(state));
+  if (bingosEl) bingosEl.textContent = String(state.bingoCount);
+
+  const bannerEl = groupSelectorEl.querySelector<HTMLDivElement>('#mp-bingo-banner');
+  const bannerSubEl = groupSelectorEl.querySelector<HTMLDivElement>('#mp-bingo-sub');
+  const hasBingo = state.bingoCount > 0;
+  if (bannerEl) bannerEl.classList.toggle('visible', hasBingo);
+  if (bannerSubEl) bannerSubEl.classList.toggle('visible', hasBingo);
+}
+
+export function updateMultiplayerPlayers(players: MultiplayerPlayerInfo[], currentPlayerId: string): void {
+  const listEl = groupSelectorEl.querySelector<HTMLDivElement>('#mp-player-list');
+  if (!listEl) return;
+
+  listEl.innerHTML = players.map(p => {
+    const isSelf = p.playerId === currentPlayerId;
+    const bingoLabel = p.bingoCount > 0 ? `<span class="mp-player-bingo-count">${p.bingoCount} Bingo${p.bingoCount > 1 ? 's' : ''}</span>` : '';
+    return `
+      <div class="mp-player-card ${isSelf ? 'mp-player-self' : ''}">
+        <div class="mp-player-info">
+          <div class="mp-player-avatar">${escapeHtml(p.displayName.charAt(0).toUpperCase())}</div>
+          <div class="mp-player-details">
+            <div class="mp-player-name">${escapeHtml(p.displayName)}${p.isHost ? ' <span class="lobby-player-host-badge">Host</span>' : ''}</div>
+            <div class="mp-player-progress-text">${p.markedCount} / 24 ${bingoLabel}</div>
+          </div>
+        </div>
+        <div class="mp-player-bar">
+          <div class="mp-player-bar-fill ${p.bingoCount > 0 ? 'mp-player-bar-bingo' : ''}" style="width: ${Math.round((p.markedCount / 24) * 100)}%"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+export function showMultiplayerBingoNotification(winnerName: string): void {
+  const overlay = document.createElement('div');
+  overlay.className = 'mp-bingo-overlay';
+  overlay.innerHTML = `
+    <div class="mp-bingo-notification">
+      <div class="mp-bingo-icon">BINGO!</div>
+      <div class="mp-bingo-winner">${escapeHtml(winnerName)}</div>
+      <div class="mp-bingo-message">hat eine Reihe geschafft!</div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  setTimeout(() => {
+    overlay.classList.add('mp-bingo-fade');
+    overlay.addEventListener('transitionend', () => overlay.remove());
+  }, 2500);
+
+  overlay.addEventListener('click', () => {
+    overlay.classList.add('mp-bingo-fade');
+    overlay.addEventListener('transitionend', () => overlay.remove());
+  });
 }
 
 export function showStaticPage(title: string, html: string, onBack: () => void): void {

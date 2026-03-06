@@ -1,5 +1,5 @@
 import './style.css';
-import { createBoardFromCells, toggleCell, resetMarks } from './bingo.ts';
+import { createBoardFromCells, toggleCell, resetMarks, multiplayerToggleCell, createBoardFromLobbyState } from './bingo.ts';
 import type { BingoState } from './bingo.ts';
 import {
   mountApp, renderBoard, updateCell, showLoading, showError, clearStatus,
@@ -7,8 +7,10 @@ import {
   showDeleteConfirmDialog, showGroupCreateForm, showGroupEditForm, showToast,
   showStaticPage, showLoginPage, updateHeaderAuth, showInvitePage, showShareDialog,
   showLobbyWaitingRoom, updateLobbyPlayerList,
+  showMultiplayerGameView, renderMultiplayerBoard, updateMultiplayerCell,
+  updateMultiplayerPlayers, showMultiplayerBingoNotification,
 } from './renderer.ts';
-import type { GroupDisplayInfo, LobbyPlayerDisplayInfo } from './renderer.ts';
+import type { GroupDisplayInfo, MultiplayerPlayerInfo } from './renderer.ts';
 import { fetchGroups, fetchBoard, deleteGroup, createGroup, fetchGroup, updateGroup, getLoginUrl, setToken, clearToken, fetchMe, generateInviteLink, fetchInviteInfo, acceptInvite, isLoggedIn, starGroup, unstarGroup, createLobby } from './api.ts';
 import type { UserInfo } from './api.ts';
 import { registerRoutes, navigate, resolve } from './router.ts';
@@ -20,8 +22,13 @@ let currentUser: UserInfo | null = null;
 let lobbyGroupName: string | null = null;
 let lobbyDisplayName: string | null = null;
 let lobbyWebSocket: WebSocket | null = null;
-let lobbyPlayers: LobbyPlayerDisplayInfo[] = [];
+let lobbyPlayers: MultiplayerPlayerInfo[] = [];
 let lobbyCurrentPlayerId: string | null = null;
+let lobbyBoard: { index: number; text: string; isFreeSpace: boolean }[] | null = null;
+let lobbyMarkedCells: number[] | null = null;
+let lobbyGameStarted = false;
+let lobbyCode: string | null = null;
+let multiplayerState: BingoState | null = null;
 
 function refreshHeaderAuth(): void {
   updateHeaderAuth(currentUser, {
@@ -165,6 +172,11 @@ function closeLobbyWebSocket(): void {
   }
   lobbyPlayers = [];
   lobbyCurrentPlayerId = null;
+  lobbyBoard = null;
+  lobbyMarkedCells = null;
+  lobbyGameStarted = false;
+  lobbyCode = null;
+  multiplayerState = null;
 }
 
 function sendLobbyMessage(type: string, payload?: Record<string, unknown>): void {
@@ -174,29 +186,79 @@ function sendLobbyMessage(type: string, payload?: Record<string, unknown>): void
 }
 
 function refreshLobbyUI(): void {
+  if (lobbyGameStarted && multiplayerState) {
+    updateMultiplayerPlayers(lobbyPlayers, lobbyCurrentPlayerId ?? '');
+    return;
+  }
   const isHost = lobbyPlayers.some(p => p.playerId === lobbyCurrentPlayerId && p.isHost);
   updateLobbyPlayerList(lobbyPlayers, isHost, () => sendLobbyMessage('game:start'));
+}
+
+function startMultiplayerGame(): void {
+  if (!lobbyBoard || !lobbyCurrentPlayerId || !lobbyCode) return;
+
+  multiplayerState = createBoardFromLobbyState(lobbyBoard, lobbyMarkedCells ?? []);
+  lobbyGameStarted = true;
+
+  showMultiplayerGameView(multiplayerState, lobbyPlayers, lobbyCurrentPlayerId, lobbyCode, {
+    onCellClick: (index) => {
+      if (!multiplayerState) return;
+      multiplayerState = multiplayerToggleCell(multiplayerState, index);
+      updateMultiplayerCell(multiplayerState, index);
+      sendLobbyMessage('cell:mark', { cellIndex: index });
+    },
+    onBack: () => {
+      closeLobbyWebSocket();
+      navigate('/groups');
+    },
+    onRestart: () => sendLobbyMessage('game:restart'),
+  });
 }
 
 function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknown> }): void {
   switch (msg.type) {
     case 'lobby:state': {
-      const payload = msg.payload as { currentPlayerId: string; players: LobbyPlayerDisplayInfo[]; gameStarted: boolean } | undefined;
+      const payload = msg.payload as {
+        currentPlayerId: string;
+        players: MultiplayerPlayerInfo[];
+        gameStarted: boolean;
+        board?: { index: number; text: string; isFreeSpace: boolean }[];
+        markedCells?: number[];
+      } | undefined;
       if (!payload) break;
       lobbyCurrentPlayerId = payload.currentPlayerId;
-      lobbyPlayers = payload.players.map(p => ({
-        playerId: p.playerId,
-        displayName: p.displayName,
-        isHost: p.isHost,
-      }));
-      refreshLobbyUI();
+      lobbyPlayers = payload.players;
+      if (payload.board) lobbyBoard = payload.board;
+      if (payload.markedCells) lobbyMarkedCells = payload.markedCells;
+
+      if (payload.gameStarted && !lobbyGameStarted) {
+        startMultiplayerGame();
+      } else if (!payload.gameStarted && lobbyGameStarted) {
+        // Game was restarted — back to waiting room, new board will come
+        lobbyGameStarted = false;
+        multiplayerState = null;
+        if (lobbyCode) {
+          showLobbyWaitingRoom(lobbyCode, lobbyGroupName ?? 'Multiplayer Lobby', {
+            onBack: () => { closeLobbyWebSocket(); navigate('/groups'); },
+            onStartGame: () => sendLobbyMessage('game:start'),
+          });
+        }
+        refreshLobbyUI();
+      } else if (lobbyGameStarted && lobbyBoard) {
+        // Re-render with updated state (e.g. after restart with new board)
+        multiplayerState = createBoardFromLobbyState(lobbyBoard, lobbyMarkedCells ?? []);
+        renderMultiplayerBoard(multiplayerState);
+        updateMultiplayerPlayers(lobbyPlayers, lobbyCurrentPlayerId ?? '');
+      } else {
+        refreshLobbyUI();
+      }
       break;
     }
     case 'player:joined': {
       const payload = msg.payload as { playerId: string; displayName: string } | undefined;
       if (!payload) break;
       if (!lobbyPlayers.some(p => p.playerId === payload.playerId)) {
-        lobbyPlayers.push({ playerId: payload.playerId, displayName: payload.displayName, isHost: false });
+        lobbyPlayers.push({ playerId: payload.playerId, displayName: payload.displayName, isHost: false, markedCount: 0, bingoCount: 0 });
       }
       refreshLobbyUI();
       break;
@@ -205,8 +267,46 @@ function handleLobbyMessage(msg: { type: string; payload?: Record<string, unknow
       const payload = msg.payload as { playerId: string; displayName: string } | undefined;
       if (!payload) break;
       lobbyPlayers = lobbyPlayers.filter(p => p.playerId !== payload.playerId);
-      // Host may have changed — we'll get a lobby:state if needed
       refreshLobbyUI();
+      break;
+    }
+    case 'game:start': {
+      if (!lobbyGameStarted) {
+        startMultiplayerGame();
+      }
+      break;
+    }
+    case 'player:progress': {
+      const payload = msg.payload as { playerId: string; markedCount: number } | undefined;
+      if (!payload) break;
+      const player = lobbyPlayers.find(p => p.playerId === payload.playerId);
+      if (player) player.markedCount = payload.markedCount;
+      if (lobbyGameStarted) {
+        updateMultiplayerPlayers(lobbyPlayers, lobbyCurrentPlayerId ?? '');
+      }
+      break;
+    }
+    case 'player:bingo': {
+      const payload = msg.payload as { playerId: string; displayName: string; winningLine: number[] } | undefined;
+      if (!payload) break;
+      const bingoPlayer = lobbyPlayers.find(p => p.playerId === payload.playerId);
+      if (bingoPlayer) bingoPlayer.bingoCount++;
+      if (lobbyGameStarted) {
+        updateMultiplayerPlayers(lobbyPlayers, lobbyCurrentPlayerId ?? '');
+      }
+      showMultiplayerBingoNotification(payload.displayName);
+      break;
+    }
+    case 'game:restart': {
+      // Server will follow up with individual lobby:state for each player
+      lobbyGameStarted = false;
+      multiplayerState = null;
+      break;
+    }
+    case 'lobby:expired': {
+      showToast('Die Lobby ist abgelaufen.');
+      closeLobbyWebSocket();
+      navigate('/groups');
       break;
     }
     case 'error': {
@@ -314,6 +414,7 @@ registerRoutes([
     pattern: '/lobby/:code',
     handler: (params) => {
       const code = params.code.toUpperCase();
+      lobbyCode = code;
       const displayName = lobbyDisplayName ?? currentUser?.name ?? 'Anonym';
 
       showLobbyWaitingRoom(code, lobbyGroupName ?? 'Multiplayer Lobby', {

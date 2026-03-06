@@ -47,6 +47,39 @@ export function toggleCell(state: BingoState, index: number): BingoState {
   return { ...state, marked, bingoCount, bingoIndexes, locked: bingoCount > 0 };
 }
 
+/** Toggle a cell in multiplayer mode: no locking (game continues after bingo). */
+export function multiplayerToggleCell(state: BingoState, index: number): BingoState {
+  if (index === FREE_INDEX) return state;
+
+  const marked = new Set(state.marked);
+  if (marked.has(index)) {
+    marked.delete(index);
+  } else {
+    marked.add(index);
+  }
+
+  const { bingoCount, bingoIndexes } = detectBingo(marked);
+
+  return { ...state, marked, bingoCount, bingoIndexes, locked: false };
+}
+
+/** Create BingoState from server lobby state (board cells + already marked cells). */
+export function createBoardFromLobbyState(
+  cells: { index: number; text: string; isFreeSpace: boolean }[],
+  markedCells: number[],
+): BingoState {
+  const board = cells
+    .sort((a, b) => a.index - b.index)
+    .map(c => c.isFreeSpace ? "FREE\n☕" : c.text);
+
+  const marked = new Set<number>(markedCells);
+  if (!marked.has(FREE_INDEX)) marked.add(FREE_INDEX);
+
+  const { bingoCount, bingoIndexes } = detectBingo(marked);
+
+  return { board, marked, bingoCount, bingoIndexes, locked: false };
+}
+
 export function resetMarks(state: BingoState): BingoState {
   return {
     ...state,
