@@ -128,12 +128,12 @@ Add real-time multiplayer support so players in the same lobby see each other's 
 **Description:** As a player, I want to see a prominent notification when any player achieves BINGO so the game has an exciting climax.
 
 **Acceptance Criteria:**
-- [ ] When `player:bingo` received, show winner notification overlay
-- [ ] Winner's name displayed prominently
-- [ ] Notification visible to all players in the lobby
-- [ ] Game board remains playable after BINGO (for multiple winners)
-- [ ] Bingo count / leaderboard shown in lobby sidebar
-- [ ] Typecheck passes
+- [x] When `player:bingo` received, show winner notification overlay
+- [x] Winner's name displayed prominently
+- [x] Notification visible to all players in the lobby
+- [x] Game board remains playable after BINGO (for multiple winners)
+- [x] Bingo count / leaderboard shown in lobby sidebar
+- [x] Typecheck passes
 
 ### US-011: Host controls (restart game)
 **Description:** As a lobby host, I want to restart the game so everyone gets fresh boards for another round.

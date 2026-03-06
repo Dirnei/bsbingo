@@ -1001,7 +1001,9 @@ export function updateMultiplayerPlayers(players: MultiplayerPlayerInfo[], curre
   const listEl = groupSelectorEl.querySelector<HTMLDivElement>('#mp-player-list');
   if (!listEl) return;
 
-  listEl.innerHTML = players.map(p => {
+  const sorted = [...players].sort((a, b) => b.bingoCount - a.bingoCount || b.markedCount - a.markedCount);
+
+  listEl.innerHTML = sorted.map(p => {
     const isSelf = p.playerId === currentPlayerId;
     const bingoLabel = p.bingoCount > 0 ? `<span class="mp-player-bingo-count">${p.bingoCount} Bingo${p.bingoCount > 1 ? 's' : ''}</span>` : '';
     return `
