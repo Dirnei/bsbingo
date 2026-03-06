@@ -787,32 +787,10 @@ button.group-card-star-count.starred {
 }
 
 /* Word Editor */
-.word-input-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.word-input-row .word-input {
-  flex: 1;
-}
-
 .word-add-btn {
   font-size: 11px;
   padding: 10px 16px;
   white-space: nowrap;
-}
-
-.bulk-input-details {
-  margin-bottom: 8px;
-}
-
-.bulk-input-toggle {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
-  color: var(--muted);
-  cursor: pointer;
-  margin-bottom: 6px;
 }
 
 .bulk-input-row {

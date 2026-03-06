@@ -72,17 +72,10 @@ export function createWordEditor(options: WordEditorOptions): WordEditor {
   function render(): void {
     container.innerHTML = `
       <div class="word-editor">
-        <div class="word-input-row">
-          <input class="form-input word-input" type="text" id="we-word-input" placeholder="Wort oder kommagetrennte Liste…" />
-          <button class="primary word-add-btn" id="we-btn-add-word">+ Hinzufügen</button>
+        <div class="bulk-input-row">
+          <textarea class="form-input bulk-input" id="we-bulk-input" rows="4" placeholder="Ein Wort pro Zeile oder kommagetrennt…"></textarea>
+          <button class="primary word-add-btn" id="we-btn-add-bulk">+ Hinzufügen</button>
         </div>
-        <details class="bulk-input-details">
-          <summary class="bulk-input-toggle">Mehrere Wörter auf einmal einfügen</summary>
-          <div class="bulk-input-row">
-            <textarea class="form-input bulk-input" id="we-bulk-input" rows="4" placeholder="Ein Wort pro Zeile oder kommagetrennt…"></textarea>
-            <button class="primary word-add-btn" id="we-btn-add-bulk">+ Alle hinzufügen</button>
-          </div>
-        </details>
         ${renderWordCount()}
         <div class="form-error hidden" id="we-words-error"></div>
         <div class="word-list" id="we-word-list">
@@ -110,9 +103,9 @@ export function createWordEditor(options: WordEditorOptions): WordEditor {
       .filter((w) => w.length > 0);
   }
 
-  function addWord(): void {
-    const input = container.querySelector<HTMLInputElement>('#we-word-input')!;
-    const parsed = parseWords(input.value);
+  function addBulkWords(): void {
+    const textarea = container.querySelector<HTMLTextAreaElement>('#we-bulk-input')!;
+    const parsed = parseWords(textarea.value);
     if (parsed.length === 0) return;
 
     let lastDuplicate: string | null = null;
@@ -135,37 +128,11 @@ export function createWordEditor(options: WordEditorOptions): WordEditor {
 
     render();
     notifyChange();
-    container.querySelector<HTMLInputElement>('#we-word-input')!.focus();
-  }
-
-  function addBulkWords(): void {
-    const textarea = container.querySelector<HTMLTextAreaElement>('#we-bulk-input')!;
-    const parsed = parseWords(textarea.value);
-    if (parsed.length === 0) return;
-
-    for (const val of parsed) {
-      words.push(val);
-    }
-
-    render();
-    notifyChange();
   }
 
   function attachEvents(): void {
-    const wordInput = container.querySelector<HTMLInputElement>('#we-word-input')!;
-    const addBtn = container.querySelector<HTMLButtonElement>('#we-btn-add-word')!;
-
-    wordInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        addWord();
-      }
-    });
-
-    addBtn.addEventListener('click', addWord);
-
-    const bulkBtn = container.querySelector<HTMLButtonElement>('#we-btn-add-bulk');
-    bulkBtn?.addEventListener('click', addBulkWords);
+    container.querySelector<HTMLButtonElement>('#we-btn-add-bulk')!
+      .addEventListener('click', addBulkWords);
 
     // Remove word
     container.querySelector('#we-word-list')!.addEventListener('click', (e) => {
